@@ -1,0 +1,3 @@
+[submodule "themes/hugo-theme-minos"]
+	path = themes/hugo-theme-minos
+	url = https://github.com/choltz/hugo-theme-minos
