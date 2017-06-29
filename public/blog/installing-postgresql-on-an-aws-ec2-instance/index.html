@@ -1,0 +1,127 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>Installing Postgresql on an AWS EC2 instance &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>Installing Postgresql on an AWS EC2 instance</h1>
+			  <span class="post-date">Wed, Aug 21, 2013</span>
+			      <p></p>
+
+<h2 id="part-1-setting-up-the-ami">Part 1 - setting up the ami</h2>
+
+<p>get an image from here:
+<a href="https://cloud-images.ubuntu.com/locator/ec2/">https://cloud-images.ubuntu.com/locator/ec2/</a></p>
+
+<p>for this article we&rsquo;ll use ami-0b8c1f0a - a 64-bit image of ubuntu 13.04
+- click the link will take you right to the launch instance dialog if you are logged into aws</p>
+
+<p>add port 22 inbound to security group</p>
+
+<p>create an elastic ip and associated it with the instance</p>
+
+<p>set up your .ssh/config file (or use command switches) to use your new key pem file</p>
+
+<p>ssh into your instance</p>
+
+<p>apt-get update upgrade dist-upgrade</p>
+
+<p>reboot - might take a minute or two to get back up</p>
+
+<h2 id="part-2-setting-up-a-persistent-ebs-volume">Part 2 - setting up a persistent ebs volume</h2>
+
+<p>volume type: IOPS
+right click on volume and attach to the ec2 instance.</p>
+
+<p>format the volume: sudo mkfs.ext4 /dev/xvdf</p>
+
+<p>add the volume to fstab so it&rsquo;s there on reboot
+/dev/xvdf /vol auto noatime 0 0</p>
+
+<p>reboot again - when you&rsquo;re back the new volume will be at /vol</p>
+
+<h2 id="part-3-setting-up-postgresl">Part 3 - setting up postgresl</h2>
+
+<p>sudo apt-get postgresql</p>
+
+<p>update user credentials:
+sudo -u postgres psql postgres
+\password postgres
+(you will be prompted for the new password)</p>
+
+<p>show data_directory - we&rsquo;ll need this for the next few steps</p>
+
+<h1 id="var-lib-postgresql-9-1-main">/var/lib/postgresql/9.1/main</h1>
+
+<p>exit out of psql console and shut postgres down</p>
+
+<p>change the permissions of /vol to postgres:postgres
+sudo chown -R postgres:postgres /vol</p>
+
+<p>change to postgres user:
+sudo su - postgres</p>
+
+<p>copy contents of that folder (&hellip;/main) to /vol
+cp -r /var/lib/postgresql/9.1/main/* /vol</p>
+
+<p>now map the new drive to psql data folder. Open /etc/fstab and change the previous entry to:
+/dev/xvdf /var/lib/postgresql/9.1/main auto noatime 0 0</p>
+
+<p>move the old postgresql data directory out of the way:
+sudo mv /var/lib/postgresql/9.1/main /var/lib/postgresql/9.1/main-old</p>
+
+<p>Reboot!</p>
+
+<p>Set the permissions to the data folder3
+sudo chmod 0700 /var/lib/postgresql/9.1/main</p>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>

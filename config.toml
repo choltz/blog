@@ -1,0 +1,18 @@
+baseurl            = "http://chrisholtz.com/"
+languageCode       = "en-us"
+title              = "Chris Holtz"
+theme              = "hugo-theme-minos"
+
+[params]
+  layoutReverse = true
+  themeColor    = "theme-base-08"
+
+pygmentsStyle      = "monokai"
+pygmentsUseClasses = true
+
+# watch filesystem for changes and recreate as needed
+watch              = true
+disableLiveReload  = false
+buildDrafts        = true
+disqusShortname    = "chrisholtz"
+googleAnalytics    = "UA-16429498-2"

@@ -1,0 +1,220 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>Getting started with the Google Maps API &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>Getting started with the Google Maps API</h1>
+			  <span class="post-date">Tue, Sep 17, 2013</span>
+			      <p>Recently I had the chance to work with a bunch of zip code and area code data. Each code had an associated latitude and longitude - from a list of area codes, I had to find those  that were N miles from a specific zip code.
+
+Ultimately the solution didn&rsquo;t call for a map-style UI, but I had he opportunity to explore the Google Maps API a bit. Here&rsquo;s a brief overview of the service.</p>
+
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCoKTnqa7xdDk3RVlZo3rWOYBPDI-kgXrM&sensor=false"></script>
+<script type="text/javascript" src="/js/2013-09-13-getting-started-with-the-google-maps-api.js"></script>
+
+<h1 id="what-is-it">What is it?</h1>
+
+<div id="map1" style="width: 300px; height: 200px; margin: 10px; border: solid 1px #999; float: right;"></div>
+The Google Maps API is a service with which you can configure interactive maps and embed them in your web page.
+
+As you can see to the right, you can mouse around the map, zoom, and even drop into street view.
+<div style="clear: both;"></div>
+
+<h1 id="get-an-api-key">Get an API key</h1>
+
+<p>Before you start using the Google Maps API, you&rsquo;ll need to get an API key. Head over to the <a href="https://code.google.com/apis/console" target="window">Google API console</a> and click on the &ldquo;Create new Browser key&rdquo; button. A dialog will open where you can enter restrictions that control which hosts can use the key.</p>
+
+<p>For development purposes, just leave that blank and click &ldquo;Create&rdquo; to generate your key. Take note of this key - you&rsquo;ll need it later when you construct your API calls. Look at the <a href="https://developers.google.com/maps/documentation/javascript/tutorial#api_key" target="window">Google Maps API documentation</a> for more information about Google API keys.</p>
+
+<p>One more note on keys: there are restrictions to the frequency of requests you can make to the API - there are also daily limits for some features. Request limit details can be found on the <a href="https://developers.google.com/maps/documentation/business/faq#usage_limits" target="window">Google Business FAQ</a>.</p>
+
+<h1 id="basic-example">Basic example</h1>
+
+<p>The most basic example of a Google Map requires three components:</p>
+
+<ul>
+<li>HTML markup - you&rsquo;ll need a div tag to house the map</li>
+<li>Javascript - a small bit of code to call the Google Maps API with parameters to configure the map</li>
+<li>Optional - CSS to style your page</li>
+</ul>
+
+<div class="highlight"><pre><code class="language-html" data-lang="html"><span></span>  <span class="p">&lt;</span><span class="nt">html</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">link</span> <span class="na">rel</span><span class="o">=</span><span class="s">&quot;stylesheet&quot;</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/css&quot;</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;gmaps.css&quot;</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;https://maps.googleapis.com/maps/api/js?key=user_your_key_here&amp;sensor=false&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">script</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text/javascript&quot;</span> <span class="na">src</span><span class="o">=</span><span class="s">&quot;gmaps.js&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;map-canvas&quot;</span><span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</code></pre></div>
+
+
+<p>The HTML file is pretty standard markup. Line five is the most important - this is required to load the Google Maps API. You&rsquo;ll also need a div block to house the map - use whatever identification scheme you like - you&rsquo;ll use Javascript to get a reference to this element for the API call.</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">addDomListener</span><span class="p">(</span><span class="nb">window</span><span class="p">,</span> <span class="s1">&#39;load&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">canvas</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&quot;map-canvas&quot;</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">mapOptions</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="nx">center</span><span class="o">:</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLng</span><span class="p">(</span><span class="mf">40.714352</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.005973</span><span class="p">),</span>
+      <span class="nx">zoom</span><span class="o">:</span>   <span class="mi">7</span>
+    <span class="p">};</span>
+
+    <span class="kd">var</span> <span class="nx">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">Map</span><span class="p">(</span><span class="nx">canvas</span><span class="p">,</span> <span class="nx">mapOptions</span><span class="p">);</span>
+  <span class="p">});</span>
+</code></pre></div>
+
+
+<p>This is where the magic happens. First we wait until the page is loaded before calling the API:</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">addDomListener</span><span class="p">(</span><span class="nb">window</span><span class="p">,</span> <span class="s1">&#39;load&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="p">...</span>
+</code></pre></div>
+
+
+<p>Then we get a reference to the HTML element that will contain the map and set up some minimal map options:</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="kd">var</span> <span class="nx">canvas</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">&quot;map-canvas&quot;</span><span class="p">);</span>
+  <span class="kd">var</span> <span class="nx">mapOptions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">center</span><span class="o">:</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLng</span><span class="p">(</span><span class="mf">40.714352</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.005973</span><span class="p">),</span>
+    <span class="nx">zoom</span><span class="o">:</span>   <span class="mi">7</span>
+  <span class="p">};</span>
+</code></pre></div>
+
+
+<p>At the minimum, you need to set a center for the map and a zoom-level. In this example, I&rsquo;m using explicit latitude and longitude coordinates. The Google Maps API includes a geolocation package - you may find that a more intuitive interface to use here.</p>
+
+<p>Finally, we bring the HTML element and the options together - when the page is done loading, you should have a map!</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="kd">var</span> <span class="nx">map</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">Map</span><span class="p">(</span><span class="nx">canvas</span><span class="p">,</span> <span class="nx">mapOptions</span><span class="p">);</span>
+</code></pre></div>
+
+
+<p>Here is the complete code for this example:
+<a href="https://github.com/choltz/fiddle/tree/master/gmaps-getting-started/example1" target="window">Code for this example</a> is up on github.</p>
+
+<h1 id="css-styling">CSS Styling</h1>
+
+<p>The map container element is subject to the usual CSS styling rules. You can use styles to format the map&rsquo;s borders, dimensions, and placement. You can see a demo of this towards the top of this article or click below to demo in a new page.</p>
+
+<p><a href="/examples/example2/gmaps.html" target="window">See the demo &gt;&gt;</a><br/>
+<a href="https://github.com/choltz/fiddle/tree/master/gmaps-getting-started/example2" target="window">View the code &gt;&gt;</a></p>
+
+<h1 id="map-types">Map Types</h1>
+
+<p>Aside from street view and birds-eye view (which are also available to the API) Google Maps has four view modes: Satellite, Road Map, Hybrid, and Terrain. This can be set during map initialization as an option:</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="kd">var</span> <span class="nx">mapOptions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">center</span><span class="o">:</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLng</span><span class="p">(</span><span class="mf">40.714352</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.005973</span><span class="p">),</span>
+    <span class="nx">zoom</span><span class="o">:</span>   <span class="mi">7</span><span class="p">,</span>
+    <span class="nx">mapTypeId</span><span class="o">:</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">MapTypeId</span><span class="p">.</span><span class="nx">ROADMAP</span>
+  <span class="p">};</span>
+</code></pre></div>
+
+
+<p>Or it can be set with a separate Javascript call:</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="nx">map</span><span class="p">.</span><span class="nx">setMapTypeId</span><span class="p">(</span><span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">MapTypeId</span><span class="p">.</span><span class="nx">ROADMAP</span><span class="p">);</span>
+</code></pre></div>
+
+
+<p>This is particularly helpful if you want to set the map type based on an event handler. In this example, we change the map type on a click event:</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="nx">$</span><span class="p">(</span><span class="s2">&quot;input[type=radio]&quot;</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">map</span><span class="p">.</span><span class="nx">setMapTypeId</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">value</span><span class="p">);</span>
+  <span class="p">});</span>
+</code></pre></div>
+
+
+<p>Note - this example users jQuery to manage the radio button click events.</p>
+
+<p><a href="/examples/example3/gmaps.html" target="window">See the demo &gt;&gt;</a><br/>
+<a href="https://github.com/choltz/fiddle/tree/master/gmaps-getting-started/example3" target="window">View the code &gt;&gt;</a></p>
+
+<p>If you want to manage the map controls yourself, you can disable all map widgets:</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="kd">var</span> <span class="nx">mapOptions</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">center</span><span class="o">:</span> <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">LatLng</span><span class="p">(</span><span class="mf">40.714352</span><span class="p">,</span> <span class="o">-</span><span class="mf">74.005973</span><span class="p">),</span>
+    <span class="nx">zoom</span><span class="o">:</span>   <span class="mi">7</span><span class="p">,</span>
+    <span class="nx">disableDefaultUI</span><span class="o">:</span> <span class="kc">true</span>
+  <span class="p">};</span>
+</code></pre></div>
+
+
+<p><a href="/examples/example4/gmaps.html" target="window">See the demo &gt;&gt;</a><br/>
+<a href="https://github.com/choltz/fiddle/tree/master/gmaps-getting-started/example4" target="window">View the code &gt;&gt;</a></p>
+
+<p>Although the navigation widgets are removed from the map UI, you can still use the mouse to move around the map and zoom in and out.</p>
+
+<h1 id="markers">Markers</h1>
+
+<p>With a little bit of Javascript, you can add your own custom markers to a map.</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span></span>  <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">addListener</span><span class="p">(</span><span class="nx">map</span><span class="p">,</span> <span class="s1">&#39;click&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">new</span> <span class="nx">google</span><span class="p">.</span><span class="nx">maps</span><span class="p">.</span><span class="nx">Marker</span><span class="p">(</span> <span class="p">{</span> <span class="nx">position</span><span class="o">:</span> <span class="nx">event</span><span class="p">.</span><span class="nx">latLng</span><span class="p">,</span>
+                              <span class="nx">map</span><span class="o">:</span>      <span class="nx">map</span> <span class="p">}</span> <span class="p">);</span>
+  <span class="p">});</span>
+</code></pre></div>
+
+
+<p>In this example, a marker is added each time you click on the map.</p>
+
+<p><a href="/examples/example5/gmaps.html" target="window">See the demo &gt;&gt;</a><br/>
+<a href="https://github.com/choltz/fiddle/tree/master/gmaps-getting-started/example5" target="window">View the code &gt;&gt;</a></p>
+
+<h1 id="this-barely-scratches-the-surface">This barely scratches the surface</h1>
+
+<p>In this article, we discussed the basics behind the Google Maps API: Getting a key, creating a basic map, setting a few properties, and reacting to events. There is much, much more to explore here. <a href="https://developers.google.com/maps/documentation/javascript/tutorial" target="window">The google maps developer&rsquo;s guide</a> is comprehensive and covers topics such as: events, layers, overlays, and geolocation. If you&rsquo;re interested in learning more, check out their guide - it is very detailed.</p>
+
+<p>That&rsquo;s all for now. If you want to explore this API with me further, let me know and I&rsquo;ll dive in further in a follow-up post.</p>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>

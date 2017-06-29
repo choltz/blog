@@ -1,0 +1,170 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>More than you care to know about the uniq method &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>More than you care to know about the uniq method</h1>
+			  <span class="post-date">Thu, Sep 26, 2013</span>
+			      <p>The other day I was digging through the ruby documentation and stumbled on the uniq method. I was startled to find that you can pass in a block as a parameter. My instinct was to back away slowly, not unlike a cat looking at a bathtub full of water.
+
+After all, why on Earth would one want to filter uniqueness based on some criteria other than an exact match? Undaunted, I figured it would be fun to explore this method a bit more&hellip; find out what makes it tick.</p>
+
+<h1 id="basic-usage">Basic Usage</h1>
+
+<p>This is a pretty common method; provided you aren&rsquo;t completely new to Ruby, you&rsquo;ve probably seen it plenty:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="n">values</span> <span class="o">=</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="o">]</span>
+  <span class="o">&gt;</span> <span class="n">values</span><span class="o">.</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>Or perhaps you&rsquo;ve used it with strings:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="n">values</span> <span class="o">=</span> <span class="o">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="o">]</span>
+  <span class="o">&gt;</span> <span class="n">values</span><span class="o">.</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>Why not mix things up?</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="kp">true</span><span class="p">,</span> <span class="kp">true</span><span class="o">].</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="kp">true</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>This raises the question - are there any data types that uniq cannot process?</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="o">[</span><span class="nb">String</span><span class="p">,</span> <span class="nb">String</span><span class="p">,\</span>
+  <span class="o">&gt;</span>   <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},\</span>
+  <span class="o">&gt;</span>   <span class="no">Fixnum</span><span class="p">,</span> <span class="no">Fixnum</span><span class="p">,\</span>
+  <span class="o">&gt;</span>   <span class="no">Hash</span><span class="o">.</span><span class="n">new</span><span class="p">,</span> <span class="no">Hash</span><span class="o">.</span><span class="n">new</span><span class="p">,\</span>
+  <span class="o">&gt;</span>   <span class="no">Object</span><span class="o">.</span><span class="n">new</span><span class="p">,</span> <span class="no">Object</span><span class="o">.</span><span class="n">new</span><span class="o">].</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="nb">String</span><span class="p">,</span> <span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">},</span> <span class="no">Fixnum</span><span class="p">,</span> <span class="p">{},</span> <span class="c1">#&lt;Object:0x89c838c&gt;, #&lt;Object:0x89c8378&gt;]</span>
+</code></pre></div>
+
+
+<p>This is quite interesting for a couple reasons. First, notice that uniq works on classes - this makes sense because Ruby classes are first class (pardon the pun) objects. Custom-defined classes work here as well as native classes.</p>
+
+<p>Second, multiple instances of the same classes (Object.new) are treated distinctly and do not reduce to a single object in the returned array. However, multiple instances of the Hash class are reduced, provided they contain the same data:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="o">[</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">}</span><span class="o">].</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">}</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>How about nested data?</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="o">[</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="p">{</span><span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">}},</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span> <span class="p">}}</span><span class="o">].</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="p">{</span><span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">}}</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>Nested hashes reduce to a single element, but only (as we would expect) if the data is identical in each element in the source array:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="o">[</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="p">{</span><span class="ss">:b</span> <span class="o">=&gt;</span> <span class="no">Object</span><span class="o">.</span><span class="n">new</span><span class="p">}},</span> <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="p">{</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="no">Object</span><span class="o">.</span><span class="n">new</span> <span class="p">}}</span><span class="o">].</span><span class="n">uniq</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="p">{</span><span class="ss">:b</span><span class="o">=&gt;</span><span class="c1">#&lt;Object:0x88bbee4&gt;}}, {:a=&gt;{:b=&gt;#&lt;Object:0x88bbea8&gt;}}]</span>
+</code></pre></div>
+
+
+<p>Because multiple instances of Object.new are treated as distinct elements by the uniq method, data structures that contain them are treated as distinct as well.</p>
+
+<h1 id="using-blocks">Using Blocks</h1>
+
+<p>Back to the original point of this article&hellip; you can pass a block as a parameter to the uniq method. I was at something of a loss as to why this would be useful - it is doesn&rsquo;t really return a unique set of data. To get a better understanding of this, let&rsquo;s try it out:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">}</span><span class="o">]</span>
+
+  <span class="o">&gt;</span> <span class="n">data</span><span class="o">.</span><span class="n">uniq</span><span class="p">{</span><span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">[</span><span class="ss">:a</span><span class="o">]</span><span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">}</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>Interesting&hellip; based on the block criteria, it appears the uniq returns the first match - in this case, {:a=&gt;1, :b=&gt;1} and {:a=&gt;2, :b=&gt;1}. Change the order of the elements in the array, let&rsquo;s see what happens:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">}</span><span class="o">]</span>
+
+  <span class="o">&gt;</span> <span class="n">data</span><span class="o">.</span><span class="n">uniq</span><span class="p">{</span><span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">[</span><span class="ss">:a</span><span class="o">]</span><span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">}</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>Uniq continues to return the first match based on the block provided. We can duplicate the uniq-with-a-block behavior by grouping the array using the same block. Then skim off all results in the group except for the first match:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="n">data</span> <span class="o">=</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">3</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">},\</span>
+            <span class="p">{</span><span class="ss">:a</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span> <span class="o">=&gt;</span> <span class="mi">3</span><span class="p">}</span><span class="o">]</span>
+
+  <span class="o">&gt;</span> <span class="n">data</span><span class="o">.</span><span class="n">group_by</span><span class="p">{</span> <span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">[</span><span class="ss">:a</span><span class="o">]</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span><span class="p">{</span> <span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span><span class="p">{</span> <span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">.</span><span class="n">first</span> <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">}</span><span class="o">]</span>
+
+  <span class="o">&gt;</span> <span class="n">data</span><span class="o">.</span><span class="n">uniq</span><span class="p">{</span> <span class="o">|</span><span class="n">d</span><span class="o">|</span> <span class="n">d</span><span class="o">[</span><span class="ss">:a</span><span class="o">]</span> <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:a</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">,</span> <span class="ss">:b</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">}</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>As you can see, the results are the same. That&rsquo;s how this began to make sense to me. Uniq with a block is just a group_by that returns the first match of each group.</p>
+
+<p>I&rsquo;m not sure I&rsquo;ll find a use for passing a block into uniq, but at the very least it was a fun exercise. If you can think of use cases for this, let me know.</p>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>

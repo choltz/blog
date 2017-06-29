@@ -1,0 +1,172 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>In defense of dynamic finders &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>In defense of dynamic finders</h1>
+			  <span class="post-date">Thu, Oct 3, 2013</span>
+			      <p>Last week I had a discussion with a colleague (and talented ruby developer) about the decision to remove dynamic finders from ActiveRecord. This is old news and I&rsquo;m sure has been hashed to death, but I figured I&rsquo;d chime in with a few thoughts, now that Rails 4.0 is out and we&rsquo;re moving towards 4.1.</p>
+
+<p>Not long ago, the dynamic finders code was moved into its own gem. This is in sync with the component philosophy that started around Rails 3. It is currently a dependency of ActiveRecord - If you want AR, you still get your finders. Coming up in 4.1 however, you&rsquo;ll have to add it to your Gemfile. Here&rsquo;s <a href="https://github.com/rails/rails/commit/3cc7223f3d57f31affdbabccc86cbc8b6589e2c8" target="window">the commit</a>.</p>
+
+<p>This will hold us over til Rails 5, when the deprecated finders gem will no longer be supported - from the <a href="https://github.com/rails/activerecord-deprecated_finders/blob/master/README.md" target="window">second sentence of its README</a>.</p>
+
+<blockquote>
+<p>It will be removed as a dependency in Rails 4.1, but users can manually
+include it in their Gemfile and it will continue to be maintained until Rails 5.</p>
+</blockquote>
+
+<p>I had a hard time finding historical discourse over dynamic finders and their eventual consignment to death row. Most references I found were about the fact that they were going away and discussions about how to arrange Arel syntax to match dynamic finder behavior. I did find one nugget, which I&rsquo;ll get into below.</p>
+
+<h1 id="the-good">The good</h1>
+
+<p>Dyamic finders were born out of necessity. Rails was designed to change web development from a slow, pain-ridden process into something fun and productive again. Dynamic
+finders fit into this by giving us a familiar vocabulary when working with a database.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="no">Post</span><span class="o">.</span><span class="n">find_by_subject</span><span class="p">(</span><span class="s2">&quot;What is your favorite color?&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+<div class="highlight"><pre><code class="language-sql" data-lang="sql"><span></span>  <span class="k">Select</span> <span class="o">*</span>
+    <span class="k">From</span> <span class="n">posts</span>
+    <span class="k">Where</span> <span class="n">subject</span> <span class="o">=</span> <span class="s1">&#39;What is your favorite color?&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+
+<p>Compared to raw SQL, dynamic finders give us a dense, readable syntax. With this in mind, I&rsquo;m delighted that Rails has provided these finders.</p>
+
+<h1 id="the-bad">The bad</h1>
+
+<p>Despite it&rsquo;s advantages, one can rapidly hit a wall when querying multiple fields.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="no">Person</span><span class="o">.</span><span class="n">find_by_name_and_title_and_quest</span><span class="p">(</span><span class="s2">&quot;Arthur&quot;</span><span class="p">,</span> <span class="s2">&quot;King of the Britons&quot;</span><span class="p">,</span> <span class="s2">&quot;Holy Grail&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p>Or &hellip;</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="no">Post</span><span class="o">.</span><span class="n">find_by_parent_id_and_orinal_and_is_active</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="kp">true</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p>Given enough facets and long enough field names, dynamic finders rapidly lose their readability. They are also limited - one cannot easily query on the negation of a boolean or query using the SQL &ldquo;LIKE&rdquo; clause.</p>
+
+<h1 id="the-ugly">The ugly</h1>
+
+<p>Under the hood, damning evidence can be seen in the <a href="https://github.com/rails/rails/blob/v3.2.15.rc2/activerecord/lib/active_record/dynamic_matchers.rb" target="window">ActiveRecord source code</a>. Dynamic finders are implemented via method_missing. While flexible, method_missing isn&rsquo;t terribly performance friendly. Having never looked into this before, I was a bit surprised to see this.</p>
+
+<p>I previously thought ActiveRecord evaluated the table structure at load-time and generated various finder methods based on fields from the table. In retrospect, I see that would&rsquo;ve been a horrible option considering the number of permutations in a table with many fields.</p>
+
+<h1 id="they-aren-t-really-gone">They aren&rsquo;t really gone</h1>
+
+<p>Consider this from the <a href="https://github.com/rails/activerecord-deprecated_finders/blob/master/README.md" target="window">deprecated finders</a> gem README:</p>
+
+<blockquote>
+<p>Note that find(primary_key), find_by&hellip;, and
+find_by&hellip;! are not deprecated.</p>
+</blockquote>
+
+<p>So find and find_by are not going away&hellip; that helps considerably - here&rsquo;s what DHH had to <a href="https://groups.google.com/forum/#!topic/rubyonrails-core/8loq2zXLoPQ" target="window">say on the matter</a>:</p>
+
+<blockquote>
+<p>&hellip;the new dynamic finders are just as good as before:
+          Product.find_by title: &ldquo;iPad Mini&rdquo;
+is just as well as:
+          Product.find_by_title &ldquo;iPad Mini&rdquo;.</p>
+</blockquote>
+
+<p>This is pretty much what got me on board. This isn&rsquo;t so bad:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="no">Post</span><span class="o">.</span><span class="n">find_by</span> <span class="ss">:subject</span> <span class="o">=&gt;</span> <span class="s2">&quot;What is your favorite color?&quot;</span>
+</code></pre></div>
+
+
+<p>I am still quite accustomed to the the old hash syntax, but I admit it is clumsy compared to the new hash syntax in this case:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="no">Post</span><span class="o">.</span><span class="n">find_by</span> <span class="ss">subject</span><span class="p">:</span> <span class="s2">&quot;What is your favorite color?&quot;</span>
+</code></pre></div>
+
+
+<p>I can definitely live with this. The only counter-argument I can see is dynamic finder methods use snake_case&hellip; just like most other variables and methods in Ruby. I am quite, quite, used to snake_case - the find_by method brakes the snake case flow as I type. This is just a nit and something easily overcome using snippets in my editor.</p>
+
+<p>So where does that leave us? I think find_by will be a sufficient replacement for dynamic finders. Syntactically, it is quite similar and should yield much better performance.</p>
+
+<p>The one part of dynamic finders I will truly miss is find_by_id. I frequently use this in edit and destroy actions to better handle the case where an invalid id is provided. find_by_id returns a nil, rather than raising an exception. I may end up creating some sort of mixin like this:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="k">module</span> <span class="nn">IdFinder</span>
+    <span class="kp">extend</span> <span class="no">ActiveSupport</span><span class="o">::</span><span class="no">Concern</span>
+
+    <span class="k">module</span> <span class="nn">ClassMethods</span>
+      <span class="k">def</span> <span class="nf">find_by_id</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+        <span class="nb">self</span><span class="o">.</span><span class="n">find_by</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">id</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>And just add it to the top of my model classes:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="k">class</span> <span class="nc">Knight</span>
+    <span class="kp">include</span> <span class="no">IdFinder</span>
+
+     <span class="k">def</span> <span class="nf">say_ni!</span>
+       <span class="o">...</span> <span class="n">etc</span> <span class="o">...</span>
+     <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>Overall, I&rsquo;m OK with the fate of dynamic finders. They are useful, but there is a reasonable replacement strategy. It will be interesting to see what happens when Rails 5 rolls around. The deprecated finders gem will be unsupported by then, but that doesn&rsquo;t mean a maintainer (or a group of maintainers) won&rsquo;t keep it going. Or maybe not - <a href="https://github.com/datanoise/actionwebservice" target="window">remember ActionWebService</a>?</p>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>

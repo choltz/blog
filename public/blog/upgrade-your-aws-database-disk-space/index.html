@@ -1,0 +1,207 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>upgrade your aws database disk space &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>upgrade your aws database disk space</h1>
+			  <span class="post-date">Sun, Aug 25, 2013</span>
+			      <p>A few years ago, I moved a co-located site over to Amazon Web Services. This included web servers, data base servers, load balancers, etc. At the time I figured an ample 8GB would be sufficient space to house our modest Postgresql database. I was right&hellip; for a time.
+
+Two years after the move, we started to run out of space due to miscellaneous file clutter: database dumps and log files grew. Clearing up this mess helped a bunch, but over time the database itself grew. Now it&rsquo;s too large for the once spacious 8 gig.</p>
+
+<h1 id="it-s-not-easy-but-it-s-not-terribly-hard">It&rsquo;s not easy but it&rsquo;s not terribly hard</h1>
+
+<p>When I first started looking into this I was hoping to find some kind of magic dial that I could tweak in the AWS management console - something I could adjust to dynamically increase the size of the database volume. It doesn&rsquo;t exist.</p>
+
+<p>Instead, you have to create a new volume&hellip; something bigger&hellip; something that will accommodate the growth of your data. Though there are a lot of steps, from a birds eye, they are grouped into a few logical chunks and I will lay them out in relatively excruciating detail in this article. Don&rsquo;t worry, it&rsquo;s a good kind of pain.</p>
+
+<p>Here&rsquo;s an overview:</p>
+
+<ul>
+<li>For the love of god, back your stuff up</li>
+<li>Create a new volume and hook it into your EC2 instance</li>
+<li>Copy the old data volume to the new</li>
+<li>Move the new data volume to the old volume&rsquo;s location</li>
+<li>Verify and cleanup</li>
+</ul>
+
+<h1 id="assumptions">Assumptions</h1>
+
+<p>1) These instructions assume you have experience in a unix terminal. You&rsquo;ll be using commands like chmod to change permissions, chown to change ownership, cp to copy files, etc.</p>
+
+<p>2) These instructions also assume some familiarity with Amazon&rsquo;s <a href="https://aws.amazon.com/console/" target="window">AWS web management console</a>. If you are not hosting your database on an AWS EC2 instance, then the steps may be of less direct benefit - though you may find useful concepts.</p>
+
+<p>3) Although these instructions are meant to expand the data volume of a Postgresql database, they can be adapted to other database back ends, provided the data files are housed in an AWS EBS volume and you know where they are located.</p>
+
+<h1 id="for-the-love-of-god-back-your-stuff-up">For the love of god, back your stuff up</h1>
+
+<p>Before you begin, back up your database with your favorite backup tools - something like this, but use your preferred settings:</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; pg_dump -h localhost -f dump.sql -Fc -Z0 -bO mydatabase
+</code></pre></div>
+
+
+<h2 id="make-an-ami-backup-of-you-database-server-instance">Make an AMI backup of you database server instance</h2>
+
+<p>With this done, head over to the AWS management console, go to the EC2 section and find your EC2 database server instance - we&rsquo;re going to back that up too. Right click on the database server insance and select &ldquo;Create Image (EBS AMI)&rdquo; - we&rsquo;re going to create an AMI image out of the running database.</p>
+
+<p>A dialog box will open, prompting you to enter a name and description. If you can afford to shut down the database server while the back up runs, leave the &ldquo;No Reboot&rdquo; checkbox unchecked - the server will be shut down before the backup begins, leaving it in a clean state. However, if a database shutdown is not an option, check &ldquo;No Reboot&rdquo; - you can find further documentation about this at the <a href="http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Tutorial_CreateImage.html" target="window">AWS documentation site</a>.</p>
+
+<p><img class="image_content_width" src="/images/aws_ami.jpg"></p>
+
+<p>Give the AMI image a relevant name then click &ldquo;Yes, Create&rdquo;</p>
+
+<p>Depending on the size of your volume, this could take some time. You can view the AMI backup in progress by clicking &ldquo;AMI&rdquo; on the side bar of the AWS EC2 panel.</p>
+
+<h1 id="create-a-new-volume-and-hook-it-into-your-ec2-instance">Create a new volume and hook it into your EC2 instance</h1>
+
+<p>OK&hellip; now that you&rsquo;re all backed up, let&rsquo;s start working on the new EBS volume. Click the volumes link on the left side of the EC2 section of the aws management console, then click &ldquo;Create Volume&rdquo;. The following dialog will open:</p>
+
+<p><img class="image_content_width" src="/images/aws_create_volume.jpg"></p>
+
+<p>Select a volume type and size. If you&rsquo;re creating an IOPS volume, give it an IOPS value as well. Amazon suggests you use an IOPS volume for database volumes, as they deliver higher performance for high I/O workloads. You can find more on the <a href="http://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_PIOPS.html" target="window">AWS documentation site</a>.</p>
+
+<p>Once you&rsquo;ve entered all the required information, click &ldquo;Yes, Create&rdquo; - the volume should show up in the list of volumes. Next, right-click on the new volume and select &ldquo;Attach&rdquo; - then select your running EC2 Postgresql server instance. This will make the volume available to the database server. Take note of the device assigned to the volume - it will look something like /dev/sdg; you&rsquo;ll need this when you mount the volume later.</p>
+
+<h2 id="format-and-mount-the-volume">Format and mount the volume</h2>
+
+<p>Let&rsquo;s take a look at the new volume from within your database server instance - SSH in and take a look at your drives.</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; sudo fdisk -l
+  Disk /dev/xvda1: <span class="m">8589</span> MB, <span class="m">8589934592</span> bytes
+
+  ...
+
+  Disk /dev/xvdg: <span class="m">21</span>.5 GB, <span class="m">21474836480</span> bytes
+  <span class="m">255</span> heads, <span class="m">63</span> sectors/track, <span class="m">2610</span> cylinders, total <span class="m">41943040</span> sectors
+  <span class="nv">Units</span> <span class="o">=</span> sectors of <span class="m">1</span> * <span class="nv">512</span> <span class="o">=</span> <span class="m">512</span> bytes
+  Sector size <span class="o">(</span>logical/physical<span class="o">)</span>: <span class="m">512</span> bytes / <span class="m">512</span> bytes
+  I/O size <span class="o">(</span>minimum/optimal<span class="o">)</span>: <span class="m">512</span> bytes / <span class="m">512</span> bytes
+  Disk identifier: 0x00000000
+
+  Disk /dev/xvdg doesn<span class="err">&#39;</span>t contain a valid partition table
+</code></pre></div>
+
+
+<p>My output tells me that the new volume&rsquo;s device is /dev/xvdg - look at yours to find out the device for your new volume.</p>
+
+<h2 id="double-check-this-device-name-you-will-be-formatting-this-volume-in-the-next-step-you-don-t-want-to-format-the-wrong-volume">Double check this device name - you will be formatting this volume in the next step; you don&rsquo;t want to format the wrong volume</h2>
+
+<p>Now format the new volume - I formatted using the ext4 file system; use what you feel is appropriate.</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; sudo mkfs.ext4 /dev/xvdg
+</code></pre></div>
+
+
+<p>Now that the volume is formatted, you can mount it by adding it to your /etc/fstab file - put this line at the bottom of the file:</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  /dev/xvdg /vol auto noatime <span class="m">0</span> <span class="m">0</span>
+</code></pre></div>
+
+
+<p>Time to reboot - when your database server restarts the new volume should be mounted at /vol.</p>
+
+<h1 id="copy-the-database-files-to-the-new-volume">Copy the database files to the new volume</h1>
+
+<p>Almost there. At this point the new volume should be mounted at /vol, so let&rsquo;s set up some permissions and then copy the files to the new volume.</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; sudo service postgresql stop
+  &gt; sudo chown -R postgres:postgres /vol
+  &gt; sudo su postgres
+  &gt; cp -r /var/lib/postgresql/9.1/main/* /vol
+</code></pre></div>
+
+
+<p>Ok all the files are copied - that may have taken a little bit, depending on the size of your database. You should be operating as the postgres user, so exit out of that to get to your original database server login prompt.</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; <span class="nb">exit</span>
+</code></pre></div>
+
+
+<h1 id="move-the-new-data-volume-to-the-old-volume-s-location">Move the new data volume to the old volume&rsquo;s location</h1>
+
+<p>Final step (aside from testing the living daylights out of the changes) - edit /etc/fstab to unmount the old volume and remount the new volume in the old volume&rsquo;s location. the fstab entry should look something like this</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  /dev/xvdg /var/lib/postgresql/9.1/main auto noatime <span class="m">0</span> <span class="m">0</span>
+</code></pre></div>
+
+
+<p>Reboot again and do some final cleanup. Postgresql won&rsquo;t be running - we need to set access premissions to the new volume.</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; sudo chmod <span class="m">700</span> /var/lib/postgresql/9.1/main
+  &gt; sudo service postgresql start
+</code></pre></div>
+
+
+<p>And that&rsquo;s it! Your database should be back on-line using the larger volume. Now would be a good time to test it out and make sure everything is working properly. If there are any problems, you can restore your old configuration from the AMI file you made earlier.</p>
+
+<h1 id="verify-and-cleanup">Verify and cleanup</h1>
+
+<p>Take a look at your disks - you should see the new volume mounted at the Postgresql data location with the new volume size.</p>
+
+<div class="highlight"><pre><code class="language-bash" data-lang="bash"><span></span>  &gt; df -h
+  Filesystem      Size  Used Avail Use% Mounted on
+  /dev/xvda1      <span class="m">7</span>.8G  <span class="m">1</span>.1G  <span class="m">6</span>.3G  <span class="m">15</span>% /
+  none            <span class="m">4</span>.0K     <span class="m">0</span>  <span class="m">4</span>.0K   <span class="m">0</span>% /sys/fs/cgroup
+  udev            285M   12K  285M   <span class="m">1</span>% /dev
+  tmpfs            59M  184K   59M   <span class="m">1</span>% /run
+  none            <span class="m">5</span>.0M     <span class="m">0</span>  <span class="m">5</span>.0M   <span class="m">0</span>% /run/lock
+  none            295M     <span class="m">0</span>  295M   <span class="m">0</span>% /run/shm
+  none            100M     <span class="m">0</span>  100M   <span class="m">0</span>% /run/user
+  /dev/xvdg        20G   84M   19G   <span class="m">1</span>% /var/lib/postgresql/9.1/main
+</code></pre></div>
+
+
+<p>Reboot your database server one last time to make sure Postgresql starts on reboot; you should be in good working order now. Keep your old db volume around in AWS for a while or use your preferred backup strategy. It&rsquo;s better to be safe and keep your old data for a bit until you feel 100% comfortable with the new volume.</p>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>

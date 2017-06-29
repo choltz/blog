@@ -1,0 +1,184 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>let&#39;s make a ruby hash map method that returns a hash instead of an array &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>let&#39;s make a ruby hash map method that returns a hash instead of an array</h1>
+			  <span class="post-date">Mon, Jan 1, 0001</span>
+			      <p>There&rsquo;s this Ruby problem I revisit from time to time. The built-in hash array has a really handy map method. To the uninitiated, the map method is used to modify all elements in an array with the function specified.</p>
+
+<p>
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="o">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="o">].</span><span class="n">map</span><span class="p">{</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="o">]</span>
+</code></pre></div>
+</p>
+
+<p>Each element in the array is modified by the block passed into the map method. Similarly, Ruby hashes also have a map method - it does more or less the same thing.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span> <span class="o">=&gt;</span> <span class="mi">3</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span> <span class="p">}</span>
+  <span class="ss">SyntaxError</span><span class="p">:</span> <span class="p">(</span><span class="n">irb</span><span class="p">):</span><span class="mi">2</span><span class="p">:</span> <span class="n">syntax</span> <span class="n">error</span><span class="p">,</span> <span class="n">unexpected</span> <span class="n">tASSOC</span><span class="p">,</span> <span class="n">expecting</span> <span class="s1">&#39;}&#39;</span>
+
+  <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span> <span class="o">=&gt;</span> <span class="mi">3</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span> <span class="p">}</span>
+  <span class="n">from</span> <span class="sr">/home/sme</span><span class="n">agol</span><span class="o">/.</span><span class="n">rvm</span><span class="o">/</span><span class="n">rubies</span><span class="o">/</span><span class="n">ruby</span><span class="o">-</span><span class="mi">1</span><span class="o">.</span><span class="mi">9</span><span class="o">.</span><span class="mi">3</span><span class="o">-</span><span class="n">p429</span><span class="o">/</span><span class="n">bin</span><span class="o">/</span><span class="ss">irb</span><span class="p">:</span><span class="mi">16</span><span class="ss">:in</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">&gt;</span>
+</code></pre></div>
+
+
+<p>Wait what? Unlike function parameters, you have to wrap your key-value pairs in braces when executing a block like this.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span> <span class="o">=&gt;</span> <span class="mi">3</span> <span class="p">}</span><span class="o">.</span><span class="n">map</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="p">{</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span> <span class="p">}</span> <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="o">[</span><span class="p">{</span><span class="ss">:x</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">},</span> <span class="p">{</span><span class="ss">:y</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">},</span> <span class="p">{</span><span class="ss">:z</span><span class="o">=&gt;</span><span class="mi">3</span><span class="p">}</span><span class="o">]</span>
+</code></pre></div>
+
+
+<p>Hmmm, marginally better - no error&hellip; but this isn&rsquo;t really what we&rsquo;re looking for. The output is an array instead of a hash - the map method signature calls for an array return type. If we want to modify key-value pairs in a hash based on a common pattern, we&rsquo;ll have to look elsewhere. Here&rsquo;s a common idiom:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="o">&gt;</span> <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span> <span class="o">=&gt;</span> <span class="mi">3</span> <span class="p">}</span><span class="o">.</span><span class="p">\</span>
+  <span class="o">&gt;</span> <span class="n">inject</span><span class="p">({}){</span> <span class="o">|</span><span class="nb">hash</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span><span class="o">|</span> <span class="nb">hash</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span> <span class="p">)</span>  <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="p">{</span><span class="ss">:x</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">,</span> <span class="ss">:y</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">,</span> <span class="ss">:z</span><span class="o">=&gt;</span><span class="mi">3</span><span class="p">}</span>
+  <span class="o">&gt;</span> <span class="c1"># if you prefer big-data parlance, the preferred term is reduce, not inject.</span>
+  <span class="o">&gt;</span> <span class="c1"># Either way, Ruby doesn&#39;t care - they do the same thing.</span>
+  <span class="o">&gt;</span> <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span> <span class="o">=&gt;</span> <span class="mi">3</span> <span class="p">}</span><span class="o">.</span><span class="p">\</span>
+  <span class="o">&gt;</span> <span class="n">reduce</span><span class="p">({}){</span> <span class="o">|</span><span class="nb">hash</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span><span class="o">|</span> <span class="nb">hash</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span> <span class="p">)</span>  <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="p">{</span><span class="ss">:x</span><span class="o">=&gt;</span><span class="mi">1</span><span class="p">,</span> <span class="ss">:y</span><span class="o">=&gt;</span><span class="mi">2</span><span class="p">,</span> <span class="ss">:z</span><span class="o">=&gt;</span><span class="mi">3</span><span class="p">}</span>
+</code></pre></div>
+
+
+<p>That works. Our output looks right, but the syntax is really verbose and just looks kind of nasty. Let&rsquo;s throw caution to the wind and monkey-patch the Hash class with a method to simplify the syntax a bit.</p>
+
+<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="k">class</span> <span class="nc">Hash</span>
+    <span class="k">def</span> <span class="nf">hmap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+      <span class="nb">self</span><span class="o">.</span><span class="n">inject</span><span class="p">({}){</span> <span class="o">|</span><span class="nb">hash</span><span class="p">,(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span><span class="o">|</span> <span class="nb">hash</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span> <span class="n">block</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="p">)</span> <span class="p">}</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="n">x</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span> <span class="p">}</span>
+  <span class="n">x</span><span class="o">.</span><span class="n">hmap</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="p">{</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span><span class="o">.</span><span class="n">to_s</span>  <span class="p">}</span> <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="p">{</span><span class="ss">:x</span> <span class="o">=&gt;</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="ss">:y</span> <span class="o">=&gt;</span> <span class="s2">&quot;2&quot;</span><span class="p">}</span>
+</code></pre></div>
+</p>
+
+<p>Much cleaner. Let&rsquo;s see how it performs.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="n">x</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="p">(</span><span class="mi">1</span><span class="o">..</span><span class="mi">10000</span><span class="p">)</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span>
+    <span class="n">x</span><span class="o">[</span><span class="s2">&quot;key</span><span class="si">#{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">]</span> <span class="o">=</span> <span class="n">i</span>
+  <span class="k">end</span>
+
+  <span class="n">t</span><span class="o">=</span><span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+  <span class="nb">puts</span> <span class="n">x</span><span class="o">.</span><span class="n">hmap</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="p">{</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span><span class="o">.</span><span class="n">to_s</span>  <span class="p">}</span> <span class="p">}</span>
+  <span class="nb">puts</span> <span class="s2">&quot;</span><span class="si">#{</span><span class="no">Time</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">t</span><span class="si">}</span><span class="s2"> seconds&quot;</span>
+  <span class="o">=&gt;</span> <span class="mi">31</span><span class="o">.</span><span class="mi">950418765</span> <span class="n">seconds</span>
+</code></pre></div>
+
+
+<p>Ouch. This is probably fine for many cases - maybe your hash only has a few key-value pairs. Perhaps you&rsquo;re just symbolizing some string-based keys&hellip; but we can do better. It turns out, you can map the hash into an array, then pass that array back into a new hash:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="no">Hash</span><span class="o">[</span><span class="n">x</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span><span class="o">|</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">|</span> <span class="o">[</span><span class="n">k</span><span class="o">.</span><span class="n">to_sym</span><span class="p">,</span> <span class="n">v</span><span class="o">.</span><span class="n">to_s</span><span class="o">]</span> <span class="p">}</span><span class="o">]</span>
+  <span class="o">=&gt;</span>  <span class="mi">0</span><span class="o">.</span><span class="mo">02</span><span class="mi">8062438</span> <span class="n">seconds</span>
+</code></pre></div>
+
+
+<p>That&rsquo;s more like it! Let&rsquo;s wrap this into the hmap() method.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="k">class</span> <span class="nc">Hash</span>
+    <span class="k">def</span> <span class="nf">hmap</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+      <span class="no">Hash</span><span class="o">[</span><span class="nb">self</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span><span class="o">|</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="o">|</span> <span class="n">block</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="p">)</span> <span class="p">}</span><span class="o">]</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="n">x</span><span class="o">.</span><span class="n">hmap</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="o">[</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span><span class="p">,</span> <span class="n">v</span> <span class="o">]</span> <span class="p">}</span>
+  <span class="o">=&gt;</span>  <span class="mi">0</span><span class="o">.</span><span class="mo">02</span><span class="mi">9331384</span> <span class="n">seconds</span>
+</code></pre></div>
+
+
+<p>Awesome. The syntax is slightly different than the inject version - we pass in an array with two cells - one for the key and the other for the value. I think this is a touch more clunky, but the speed improvement is well worth it.</p>
+
+<p>Keep in mind, this is a non-destructive method - you get a new hash when you run it. If we don&rsquo;t want to create a new hash, we&rsquo;ll have to enumerate every key in the hash, create a new key and value based on the block provided and then delete the old key.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="k">class</span> <span class="nc">Hash</span>
+    <span class="k">def</span> <span class="nf">hmap!</span><span class="p">(</span><span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+      <span class="nb">self</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">key</span><span class="o">|</span>
+        <span class="nb">hash</span> <span class="o">=</span> <span class="n">block</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">self</span><span class="o">[</span><span class="n">key</span><span class="o">]</span><span class="p">)</span>
+
+        <span class="nb">self</span><span class="o">[</span><span class="nb">hash</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">first</span><span class="o">]</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">[</span><span class="nb">hash</span><span class="o">.</span><span class="n">keys</span><span class="o">.</span><span class="n">first</span><span class="o">]</span>
+        <span class="nb">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+      <span class="k">end</span>
+      <span class="nb">self</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+
+  <span class="n">x</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;x&quot;</span> <span class="o">=&gt;</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span> <span class="o">=&gt;</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span> <span class="o">=&gt;</span> <span class="mi">3</span> <span class="p">}</span>
+  <span class="n">x</span><span class="o">.</span><span class="n">hmap!</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="p">{</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span><span class="o">.</span><span class="n">to_s</span> <span class="p">}</span> <span class="p">}</span>
+  <span class="o">=&gt;</span> <span class="p">{</span><span class="ss">:x</span><span class="o">=&gt;</span><span class="s2">&quot;1&quot;</span><span class="p">,</span> <span class="ss">:y</span><span class="o">=&gt;</span><span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="ss">:z</span><span class="o">=&gt;</span><span class="s2">&quot;3&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+
+<p>If we run this against the 10,000 key data set from earlier, we decent performance. Not as good, but still not too bad.</p>
+
+<p><div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="n">x</span> <span class="o">=</span> <span class="p">{}</span>
+  <span class="p">(</span><span class="mi">1</span><span class="o">..</span><span class="mi">10000</span><span class="p">)</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">i</span><span class="o">|</span>
+    <span class="n">x</span><span class="o">[</span><span class="s2">&quot;key</span><span class="si">#{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="o">]</span> <span class="o">=</span> <span class="n">i</span>
+  <span class="k">end</span>
+
+  <span class="n">t</span><span class="o">=</span><span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+  <span class="n">x</span><span class="o">.</span><span class="n">hmap!</span><span class="p">{</span> <span class="o">|</span><span class="n">k</span><span class="p">,</span><span class="n">v</span><span class="o">|</span> <span class="p">{</span> <span class="n">k</span><span class="o">.</span><span class="n">to_sym</span> <span class="o">=&gt;</span> <span class="n">v</span><span class="o">.</span><span class="n">to_s</span> <span class="p">}</span> <span class="p">}</span>
+  <span class="nb">puts</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">t</span>
+  <span class="o">=&gt;</span> <span class="mi">0</span><span class="o">.</span><span class="mo">061217351</span>
+</code></pre></div>
+</p>
+
+<p>Depending on the amount of data in your hash, your mileage will vary, but I find this a pretty serviceable addition to the hash class. If you&rsquo;re concerned about monkey-patching, consider including and/or extending this functionality into one of your own classes or instances.</p>
+
+<p>Let me know if you have any other approaches to this problem. I revisit it from time to time and would love to find a way to make the destructive version of hmap!() run faster.</p>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>

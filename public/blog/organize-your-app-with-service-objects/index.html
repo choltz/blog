@@ -1,0 +1,347 @@
+	<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us" lang="en-us">
+<head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta name="generator" content="Hugo 0.19" />
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  
+  <title>Organize your app with service objects &middot; Chris Holtz</title>
+  
+
+  
+  <link rel="stylesheet" href="http://chrisholtz.com/css/poole.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/syntax.css">
+  <link rel="stylesheet" href="http://chrisholtz.com/css/hyde.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=PT+Sans:400,400italic,700|Abril+Fatface">
+
+  
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/apple-touch-icon-144-precomposed.png">
+  <link rel="shortcut icon" href="/favicon.png">
+
+  
+  <link href="" rel="alternate" type="application/rss+xml" title="Chris Holtz" />
+</head>
+
+	<body class="theme-base-08 layout-reverse">
+		<div class="sidebar">
+  <div class="container sidebar-sticky">
+    <div class="sidebar-about">
+      <a href="http://chrisholtz.com/"><h1>Chris Holtz</h1></a>
+      <p class="lead">
+      An elegant open source and mobile first theme for <a href="http://hugo.spf13.com">hugo</a> made by <a href="http://twitter.com/mdo">@mdo</a>. Originally made for Jekyll.
+      </p>
+    </div>
+
+    <ul class="sidebar-nav">
+      <li><a href="/">Home</a> </li>
+      
+    </ul>
+
+    <p>&copy; 2017. All rights reserved. </p>
+  </div>
+</div>
+
+
+		<div class="content container">
+			<div class="post">
+			 	<h1>Organize your app with service objects</h1>
+			  <span class="post-date">Tue, May 3, 2016</span>
+			      <p>If you have developed in Ruby on Rails for a while, you&rsquo;ve probably heard plenty of advocacy for thin controllers. If you&rsquo;ve followed through with this philosophy you may have ended up with heavy models instead.
+
+There are assorted ways to deal with this and Rails does a good job of getting out of the way so you can solve the problem; each has their strengths and weaknesses. Over several projects, I have found service objects keep both models and controllers light-weight and provides an improved level of organization for the project.</p>
+
+<p>Before we dive in, note that this is a multi-part series.<br/></p>
+
+<ul>
+<li>Part I: Organize your app with service objects</li>
+<li><a href="/blog/service-object-test-strategies">Part II: Service Object Test Strategies</a></li>
+</ul>
+
+<h1 id="what-is-a-service-object">What is a service object?</h1>
+
+<p>The details are somewhat subjective, but in general, service objects encapsulate a single chunk of business logic. These objects contain code that would otherwise end up in a controller or model.</p>
+
+<p>For example, let&rsquo;s say you have an admin form to create new users. When a new user is created, assorted recipients are notified via email and others are notified via SMS. Assuming business logic has been extracted from the controller, the model code might look something like this:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1">#app/models/user.rb</span>
+  <span class="k">class</span> <span class="nc">User</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+    <span class="n">scope</span> <span class="ss">:emailable_users</span><span class="p">,</span> <span class="o">-&gt;</span> <span class="p">{</span>
+      <span class="n">where</span><span class="p">(</span><span class="s1">&#39;email_address is not null&#39;</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="n">scope</span> <span class="ss">:textable_users</span><span class="p">,</span> <span class="o">-&gt;</span> <span class="p">{</span>
+      <span class="n">where</span><span class="p">(</span><span class="s1">&#39;phone_number is not null&#39;</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="n">after_create</span> <span class="ss">:notify_users</span>
+
+    <span class="k">def</span> <span class="nf">notify_users</span>
+      <span class="n">emailable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+        <span class="no">UserMailer</span><span class="o">.</span><span class="n">notify_users</span><span class="p">(</span><span class="ss">recipient</span><span class="p">:</span> <span class="n">recipient</span><span class="p">,</span> <span class="ss">new_user</span><span class="p">:</span> <span class="nb">self</span><span class="p">)</span><span class="o">.</span><span class="n">deliver</span>
+      <span class="k">end</span>
+
+      <span class="n">textable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+        <span class="n">send_text</span> <span class="ss">recipient</span><span class="p">:</span> <span class="n">recipient</span><span class="p">,</span> <span class="ss">new_user</span><span class="p">:</span> <span class="nb">self</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+
+    <span class="k">def</span> <span class="nf">send_text</span><span class="p">(</span><span class="ss">new_user</span><span class="p">:</span> <span class="p">)</span>
+      <span class="c1"># This is a call to a fictional SMS service</span>
+      <span class="no">TextMessageApi</span><span class="o">.</span><span class="n">send_message</span> <span class="n">user_user</span><span class="o">.</span><span class="n">phone_number</span><span class="p">,</span> <span class="s2">&quot;A new user has been created: </span><span class="si">#{</span><span class="n">new_user</span><span class="o">.</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>There are several problems here:</p>
+
+<ol>
+<li>The presence of a callback muddies unit tests - you need to take special precautions to not message users when tests run</li>
+<li>There may be cases where you want to create a user without sending messages</li>
+<li>Sending messages are restricted to the context of an instantiated user model</li>
+<li>Texting API logic is locked inside of the user model and is not usable elsewhere in the system</li>
+</ol>
+
+<h1 id="let-s-reorganize-this-with-service-objects">Let&rsquo;s reorganize this with service objects</h1>
+
+<p>First, remove the messaging business logic from the model; the only thing left should be scopes.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1">#app/models/user.rb</span>
+  <span class="k">class</span> <span class="nc">User</span> <span class="o">&lt;</span> <span class="no">ActiveRecord</span><span class="o">::</span><span class="no">Base</span>
+    <span class="ss">scope</span><span class="p">:</span> <span class="n">emailable_users</span><span class="p">,</span> <span class="o">-&gt;</span> <span class="p">{</span>
+      <span class="n">where</span><span class="p">(</span><span class="s1">&#39;email_address is not null&#39;</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="ss">scope</span><span class="p">:</span> <span class="n">textable_users</span><span class="p">,</span> <span class="o">-&gt;</span> <span class="p">{</span>
+      <span class="n">where</span><span class="p">(</span><span class="s1">&#39;phone_number is not null&#39;</span><span class="p">)</span>
+    <span class="p">}</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>Next, move the messaging logic to a new service - it would look something like this:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/services/notify_users.rb</span>
+  <span class="k">module</span> <span class="nn">Services</span>
+    <span class="k">class</span> <span class="nc">NotifyUsers</span>
+      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">new_user</span><span class="p">)</span>
+        <span class="no">User</span><span class="o">.</span><span class="n">emailable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+          <span class="no">UserMailer</span><span class="o">.</span><span class="n">notify_users</span><span class="p">(</span><span class="ss">recipient</span><span class="p">:</span> <span class="n">recipient</span><span class="p">,</span> <span class="ss">new_user</span><span class="p">:</span> <span class="n">new_user</span><span class="p">)</span><span class="o">.</span><span class="n">deliver</span>
+        <span class="k">end</span>
+
+        <span class="no">User</span><span class="o">.</span><span class="n">textable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+          <span class="n">send_text</span> <span class="ss">recipient</span><span class="p">:</span> <span class="n">recipient</span><span class="p">,</span> <span class="ss">new_user</span><span class="p">:</span> <span class="n">new_user</span>
+        <span class="k">end</span>
+      <span class="k">end</span>
+
+      <span class="kp">private</span>
+
+      <span class="k">def</span> <span class="nf">send_text</span><span class="p">(</span><span class="ss">new_user</span><span class="p">:</span> <span class="p">)</span>
+        <span class="c1"># This is a call to a fictional SMS service</span>
+        <span class="no">TextMessageApi</span><span class="o">.</span><span class="n">send_message</span> <span class="n">user_user</span><span class="o">.</span><span class="n">phone_number</span><span class="p">,</span> <span class="s2">&quot;A new user has been created: </span><span class="si">#{</span><span class="n">new_user</span><span class="o">.</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>The above code is a bit repetitive - the two enumerations are very similar and the parameters passed to the <code>notify_users</code> and <code>send_text</code> are identical. Bonus points if you can <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself" target="window">DRY</a> the <code>call</code> method up a bit.</p>
+
+<p>The texting API call logic is still locked up inside of the <code>NotifyUsers</code> service&hellip; that too can be a service:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/services/send_sms_message.rb</span>
+  <span class="k">module</span> <span class="nn">Services</span>
+    <span class="k">class</span> <span class="nc">SendSmsMessage</span>
+      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">phone_number</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
+        <span class="c1"># This is a call to a fictional SMS service</span>
+        <span class="no">TextMessageApi</span><span class="o">.</span><span class="n">send_message</span> <span class="n">phone_number</span><span class="p">,</span> <span class="n">message</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>Now we can freely send SMS messages from anywhere in the app. While it&rsquo;s true one could do this by calling <code>TextMessageApi.send_message</code>, We now have a central place through which all SMS logic flows. If you decide to change SMS messaging providers (presumably with different API structures), just change it in this one place - all calls to this service will use the new provider.</p>
+
+<p>With the SMS logic pulled into a dedicated service object, the <code>NotifyUsers</code> service looks like this:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/services/notify_users.rb</span>
+  <span class="k">module</span> <span class="nn">Services</span>
+    <span class="k">class</span> <span class="nc">NotifyUsers</span>
+      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">new_user</span><span class="p">)</span>
+        <span class="no">User</span><span class="o">.</span><span class="n">emailable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+          <span class="no">UserMailer</span><span class="o">.</span><span class="n">notify_users</span><span class="p">(</span><span class="ss">recipient</span><span class="p">:</span> <span class="n">recipient</span><span class="p">,</span> <span class="ss">new_user</span><span class="p">:</span> <span class="n">new_user</span><span class="p">)</span><span class="o">.</span><span class="n">deliver</span>
+        <span class="k">end</span>
+
+        <span class="no">User</span><span class="o">.</span><span class="n">textable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+          <span class="no">Services</span><span class="o">::</span><span class="no">SendSmsService</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">call</span> <span class="n">new_user</span><span class="o">.</span><span class="n">phone_number</span><span class="p">,</span> <span class="s2">&quot;A new user has been created: </span><span class="si">#{</span><span class="n">new_user</span><span class="o">.</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">end</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<h1 id="the-call-method">The call method</h1>
+
+<p>These services are invoked via the <code>call()</code> method. This method could be named anything - <code>perform()</code> and <code>process()</code> are workable alternatives. However, I use <code>call()</code> because it is the same method name used by ruby Proc and Lambda objects to invoke their content. This becomes more important when applying functional programming principals to service objects. Also, <code>call()</code> can be invoked via shortcut notation:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="no">Services</span><span class="o">::</span><span class="no">NotifyUsers</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+  <span class="no">Services</span><span class="o">::</span><span class="no">NotifyUsers</span><span class="o">.</span><span class="n">new</span><span class="o">.</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p>Both perform the same operation and look pretty good, but why bother typing <code>new</code> over and over. This can be cleaned up a bit with a mixin:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/services/base.rb</span>
+  <span class="k">module</span> <span class="nn">Services</span>
+    <span class="k">module</span> <span class="nn">Base</span>
+      <span class="k">def</span> <span class="nc">self</span><span class="o">.</span><span class="nf">included</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+        <span class="n">base</span><span class="o">.</span><span class="n">extend</span> <span class="no">ClassMethods</span>
+      <span class="k">end</span>
+
+      <span class="k">module</span> <span class="nn">ClassMethods</span>
+        <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span><span class="p">)</span>
+          <span class="vi">@instance</span> <span class="o">||=</span> <span class="nb">self</span><span class="o">.</span><span class="n">new</span>
+          <span class="vi">@instance</span><span class="o">.</span><span class="n">call</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">block</span>
+       <span class="k">end</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>This module adds adds a <code>call()</code> class method that instantiates the service and cached it, then passes the parameters to the instance&rsquo;s <code>call()</code> method. Include the module at the top of the service like this:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/services/notify_users.rb</span>
+  <span class="k">module</span> <span class="nn">Services</span>
+    <span class="k">class</span> <span class="nc">NotifyUsers</span>
+      <span class="kp">include</span> <span class="no">Services</span><span class="o">::</span><span class="no">Base</span>
+
+      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">new_user</span><span class="p">)</span>
+        <span class="no">User</span><span class="o">.</span><span class="n">emailable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+          <span class="no">UserMailer</span><span class="o">.</span><span class="n">notify_users</span><span class="p">(</span><span class="ss">recipient</span><span class="p">:</span> <span class="n">recipient</span><span class="p">,</span> <span class="ss">new_user</span><span class="p">:</span> <span class="n">new_user</span><span class="p">)</span><span class="o">.</span><span class="n">deliver</span>
+        <span class="k">end</span>
+
+        <span class="no">User</span><span class="o">.</span><span class="n">textable_users</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">recipient</span><span class="o">|</span>
+          <span class="no">Services</span><span class="o">::</span><span class="no">SendSmsService</span><span class="o">.</span><span class="n">call</span> <span class="n">new_user</span><span class="o">.</span><span class="n">phone_number</span><span class="p">,</span> <span class="s2">&quot;A new user has been created: </span><span class="si">#{</span><span class="n">new_user</span><span class="o">.</span><span class="n">email</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">end</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>now you can invoke <code>call</code> directly on the class:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="no">Services</span><span class="o">::</span><span class="no">NotifyUsers</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+  <span class="no">Services</span><span class="o">::</span><span class="no">NotifyUsers</span><span class="o">.</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+</code></pre></div>
+
+
+<p>One might argue that you may as well just declare service object methods as class methods. This is a valid argument&hellip; however, by using a mixin, one still has the option to invoke the service as an instance via <code>YourService.new.call()</code>. This can be useful in cases where you want to initialize the service with some stateful data prior to invocation.</p>
+
+<p>How does this look in the context of a controller?</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/controllers/users_controller.rb</span>
+   <span class="k">class</span> <span class="nc">UsersController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+     <span class="k">def</span> <span class="nf">create</span>
+       <span class="vi">@user</span> <span class="o">=</span> <span class="n">user</span><span class="o">.</span><span class="n">create</span> <span class="n">params</span><span class="o">[</span><span class="ss">:user</span><span class="o">]</span>
+
+       <span class="k">if</span> <span class="vi">@user</span><span class="o">.</span><span class="n">valid?</span>
+         <span class="no">Services</span><span class="o">::</span><span class="no">NotifyUsers</span><span class="o">.</span><span class="p">(</span><span class="vi">@user</span><span class="p">)</span>
+         <span class="n">redirect_to</span> <span class="n">admin_users_path</span>
+       <span class="k">else</span>
+         <span class="n">flash</span><span class="o">[</span><span class="ss">:error</span><span class="o">]</span> <span class="o">=</span> <span class="s2">&quot;There was a problem creating the user. </span><span class="si">#{</span><span class="vi">@user</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">messages</span><span class="si">}</span><span class="s2">&quot;</span>
+         <span class="n">render</span> <span class="ss">:edit</span>
+       <span class="k">end</span>
+     <span class="k">end</span>
+   <span class="k">end</span>
+</code></pre></div>
+
+
+<h1 id="what-have-we-gained">What have we gained?</h1>
+
+<p>Let&rsquo;s take a moment and look over what we&rsquo;ve gained:</p>
+
+<ol>
+<li>Notifications can be called outside the context of a User instance</li>
+<li>User unit tests are focused on the concern of users</li>
+<li>Messaging unit tests are isolated to the concern of messaging</li>
+<li>Business logic now exists in the dedicated home <code>app/services</code></li>
+</ol>
+
+<p>This looks good, but there&rsquo;s more to do. Because we removed the <code>after_create</code> callback from the User model, we have to manually call both <code>@user.create</code> as well as <code>Services::NotifyUsers</code>.</p>
+
+<p>This requires that the developer remember to send notifications whenever a new user is created. To address this, let&rsquo;s make a service that does both:</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/services/create_user.rb</span>
+  <span class="k">module</span> <span class="nn">Services</span>
+    <span class="k">class</span> <span class="nc">CreateUser</span>
+      <span class="kp">include</span> <span class="no">Services</span><span class="o">::</span><span class="no">Base</span>
+
+      <span class="k">def</span> <span class="nf">call</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="no">User</span><span class="o">.</span><span class="n">create</span> <span class="n">params</span><span class="o">[</span><span class="ss">:user</span><span class="o">]</span>
+
+        <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">valid?</span>
+          <span class="no">Services</span><span class="o">::</span><span class="no">NotifyUsers</span><span class="o">.</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+        <span class="k">end</span>
+
+        <span class="n">user</span>
+      <span class="k">end</span>
+    <span class="k">end</span>
+  <span class="k">end</span>
+</code></pre></div>
+
+
+<p>We update the controller by swapping out the <code>User.create</code> call with the <code>CreateUser</code> service.</p>
+
+<div class="highlight"><pre><code class="language-ruby" data-lang="ruby"><span></span>  <span class="c1"># app/controllers/users_controller.rb</span>
+   <span class="k">class</span> <span class="nc">UsersController</span> <span class="o">&lt;</span> <span class="no">ApplicationController</span>
+     <span class="k">def</span> <span class="nf">create</span>
+       <span class="vi">@user</span> <span class="o">=</span> <span class="no">Services</span><span class="o">::</span><span class="no">CreateUser</span><span class="o">.</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+       <span class="k">if</span> <span class="vi">@user</span><span class="o">.</span><span class="n">valid?</span>
+         <span class="n">redirect_to</span> <span class="n">admin_users_path</span>
+       <span class="k">else</span>
+         <span class="n">flash</span><span class="o">[</span><span class="ss">:error</span><span class="o">]</span> <span class="o">=</span> <span class="s2">&quot;There was a problem creating the user. </span><span class="si">#{</span><span class="vi">@user</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">messages</span><span class="si">}</span><span class="s2">&quot;</span>
+         <span class="n">render</span> <span class="ss">:edit</span>
+       <span class="k">end</span>
+     <span class="k">end</span>
+   <span class="k">end</span>
+</code></pre></div>
+
+
+<p>Now we have a means to create a user and send notifications at the same time, effectively replacing the original callback code. What&rsquo;s more, at the controller layer of abstraction only one line of code changed.</p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>There&rsquo;s more about services to cover like:</p>
+
+<ol>
+<li>Dependency injection to better isolate service logic in unit tests</li>
+<li>Nesting modules to name space common services together</li>
+<li>Functional chaining of service objects</li>
+</ol>
+
+<p>We&rsquo;ll cover these in future posts. In the mean time - to review, service objects:</p>
+
+<ol>
+<li>Have a single point of entry: <code>call()</code></li>
+<li>Have one concern and generally represent a single chunk of business logic</li>
+<li>Contain logic that would otherwise end up in a controller or model</li>
+<li>Are available throughout the project code and are not restricted to workflows within a single controller or model</li>
+<li>Simplify tests by narrowing each test file down to a single business concern</li>
+<li>Are an alternative to potentially convoluted callbacks</li>
+</ol>
+			</div>
+
+			
+		</div>
+
+  </body>
+</html>
