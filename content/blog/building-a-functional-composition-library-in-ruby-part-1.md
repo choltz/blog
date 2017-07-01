@@ -62,3 +62,26 @@ Let's address both of these points by building a compose function.
 
 Compostion function
 -------------------
+Let's work backwards for a moment. Using the previous example, this is roughly how we want a composition function to look:
+
+{{< highlight ruby >}}
+data       = ['key1', '1', 'key2', '2']
+to_hash    = ->(array) { Hash[*data] }
+key_to_sym = ->(hash)  { hash.reduce({}) { |hash, (key, value)| hash.merge(key.to_sym => value) } }
+val_to_num = ->(hash)  { hash.reduce({}) { |hash, (key, value)| hash.merge(key => value.to_i) } }
+
+functions = [to_hash, key_to_sym, val_to_num]
+
+expected = { key1: 1, key2: 2}
+assert_equal expected, functions.call(data)
+{{< /highlight >}}
+
+Unlike the previous example, this bit of code places the functions in the order in which they execute. The nesting is also resolved.
+
+One last point I want to make about this before exploring how to build the compose function... take a look at the line `functions = [to_hash, key_to_sym, val_to_num]`. Notice that this line does not execute the results, it simply defines how the composition will be built. Actual execution of the composition is defered.
+
+This defered execution is a key point to composition. A high level of re-use can be achieved by creating small and very focused functions and stitching them together via composition. Think of functions like individual bricks in a Lego set.
+
+Composition function code
+-------------------------
+Let's start building.
