@@ -34,7 +34,7 @@ In fact, this feature is a great stepping stone to functional programming and he
 
 Despite the advantages of method chaining, there are a couple problems.
 
-1. This isn't very readable - the old joke is that it is <a href="https://en.wikipedia.org/wiki/Write-only_language" target=
+1. This isn't self documenting - the old joke is that it is <a href="https://en.wikipedia.org/wiki/Write-only_language" target=
 "window">write only code</a>
 2. We can't add new methods with more meaningful names to the method chain
 3. This method does a lot - many tests would be needed to verify all cases
@@ -78,7 +78,7 @@ def capitalize_sentences(text)
 end
 ```
 
-This is more readable and requires less explanatory comments, but we have lost a lot of chainability.
+The cleanup function is more reable and requires less explanatory comments, but we have lost a lot of chainability.
 
 Functions!
 ==========
@@ -157,4 +157,4 @@ Where do we go from here?
 =========================
 Now that the stage has been set, we'll start building this. The `Function` class is just a subclass of `Proc` with syntactic sugar.
 
-Roll up your sleeves and head over to <a href="">Part 2</a>.
+Roll up your sleeves and head over to <a href="/blog/building-a-functional-composition-library-in-ruby-part-1">Part 2</a>.
