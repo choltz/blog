@@ -24,7 +24,7 @@ def cleanup(text)
       .join('. ')
 end
 ```
-Ruby is quite versatile at manipulating text, but the code isn't very self describing. Next we'll break each of these steps into a lambda:
+Ruby is quite versatile at manipulating text, but this code isn't very self describing. Let's break each of these calls to meaningfully named lambda functions.
 
 ```
 text    = "This is an <b>example</b> of\n text. it has formatting issues."
@@ -49,7 +49,7 @@ results = join.call(
 
 assert_equal "This is an example of text. It has formatting issues", results
 ```
-Ok that's pretty ugly. I formatted the composition call in an indented hierarchy to illustrate a couple points:
+Ok that looks pretty terrible. I formatted the composition call in an indented hierarchy to illustrate a couple points:
 
 1. Nesting function calls gets ugly fast - you end up with a <a href="https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming)" target="window">pyramid of doom</a>
 2. The order in which the functions execute is counter-intuitive. One would think the first function in the list is the first to execute, but because we're nesting functions, they execute from the inside out.
@@ -69,17 +69,18 @@ strip             = ->(text) { text.strip }
 capitalize        = ->(text) { text.map(&:capitalize) }
 join              = ->(array) { array.join('. ') }
 
-composition = compose strip,
-                      remove_line_feeds,
-                      remove_markup,
-                      split_sentences,
-                      capitalize,
-                      join
+composition = compose [ strip,
+                        remove_line_feeds,
+                        remove_markup,
+                        split_sentences,
+                        capitalize,
+                        join ]
 
 assert_equal "This is an example of text. It has formatting issues", composition.call(text)
 {{< /highlight >}}
 
 A few points:
+
 1. The functions in the composition execute in the order in which they are listed
 2. The deep nesting is gone
 3. Execution is deferred until the composition is called
@@ -96,19 +97,62 @@ The workflow is perfectly described by the <a href="https://ruby-doc.org/core-2.
 
 Expressing a composition with reduce looks something like this:
 
+{{< highlight ruby >}}
+text              = "This is an <b>example</b> of\n text. it has formatting issues."
+remove_line_feeds = ->(text)  { text.gsub(/\n+/, '') }
+remove_markup     = ->(text)  { text.gsub(/(<([^>]+)>)/, '') }
+split_sentences   = ->(text)  { text.split(/ *\. */) }
+strip             = ->(text)  { text.strip }
+capitalize        = ->(text)  { text.map(&:capitalize) }
+join              = ->(array) { array.join('. ') }
+
+functions = [ strip,
+              remove_line_feeds,
+              remove_markup,
+              split_sentences,
+              capitalize,
+              join ]
+
+composition = ->(arg) {
+  functions.reduce(arg) do |result, function|
+    function.call result
+  end
+}
+
+assert_equal "This is an example of text. It has formatting issues", composition.call(text)
+{{< /highlight >}}
+
+Take note that the reduce call has to be wrapped in a lambda, otherwise we'd lose deferred execution.
+
+Now that we have working code that composes functions, this can be pulled into a common home. In the Lightpipe GEM, It is in function.rb. Here is what this example looks like:
+
 
 {{< highlight ruby >}}
-data       = ['key1', '1', 'key2', '2']
-to_hash    = ->(array) { Hash[*data] }
-key_to_sym = ->(hash)  { hash.reduce({}) { |hash, (key, value)| hash.merge(key.to_sym => value) } }
-val_to_num = ->(hash)  { hash.reduce({}) { |hash, (key, value)| hash.merge(key => value.to_i) } }
+class SomeClass
+  include Lightpipe
 
-functions = [to_hash, key_to_sym, val_to_num]
+  def cleanup(content)
+    remove_line_feeds = ->(text)  { text.gsub(/\n+/, '') }
+    remove_markup     = ->(text)  { text.gsub(/(<([^>]+)>)/, '') }
+    split_sentences   = ->(text)  { text.split(/ *\. */) }
+    strip             = ->(text)  { text.strip }
+    capitalize        = ->(text)  { text.map(&:capitalize) }
+    join              = ->(array) { array.join('. ') }
 
-composition = functions.reduce do |result, function|
-  function.call result
-end
-
-expected = { key1: 1, key2: 2}
-assert_equal expected, composition.call(data)
+    composition = Function.compose [ strip,
+                                     remove_line_feeds,
+                                     remove_markup,
+                                     split_sentences,
+                                     capitalize,
+                                     join ]
+    composition.call(content)
+  end
 {{< /highlight >}}
+
+This gets us a long ways towards practical composition in Ruby, but there more work to do:
+
+1. We can make the composition a lot more terse by overloading an operator
+2. We extract things like `remove_line_feeds` and `remove_markup` into a re-usable library of functions
+3. This solution is a lot more verbose than the original non-composed version
+
+Each of these points will be addressed in the coming articles in this series.
