@@ -1,5 +1,5 @@
 +++
-title         = "Functional composition library in ruby - part 1"
+title         = "functional composition library in ruby - part 1"
 date          = "2017-01-14T16:18:00"
 comments      = true
 thumbnail     = "images/gears.png"
@@ -90,24 +90,29 @@ The goal is to make our example look something like this:
 
 ```
 def cleanup
-  Fs.strip                |
-  Fs.remove_line_feeds    |
-  Fs.remove_html_tags     |
-  Fs.capitalize_sentences
+  strip                |
+  remove_line_feeds    |
+  remove_html_tags     |
+  capitalize_sentences
 end
 ```
 
-Let's take a look at what's going on in this function. Each line is a class function defined in `Fs`, an alias to the class `Functions::String` (described below).
-
-Each of these functions returns a function rather than a value. That is, `Fs.strip` doesn't strip a string, it returns a function that strips a string. That way we can chain (compose) as many functions together as we like lazily, and then execute that composition later.
+Let's take a look at what's going on in this function. Each of these functions returns a function rather than a value. That is, `strip` doesn't strip a string, it returns a function that strips a string. That way we can chain (compose) as many functions together as we like lazily, and then execute that composition later.
 
 The pipe `|` is an operator override that calls a compose method that joins the functions together - the output of one function is passed to the input of the next.
 
-Here is what `Functions::String` would look like:
+The functions `strip`, `remove_line_feeds`, etc... are defined in the same class. Togther it would look like this:
 
 ```
 module Functions
-  class String
+  class StringOperations
+    def cleanup
+      strip                |
+      remove_line_feeds    |
+      remove_html_tags     |
+      capitalize_sentences
+    end
+
     def strip
       Function.new { |text| text.strip }
     end
@@ -128,7 +133,7 @@ module Functions
   end
 ```
 
-Instead of using a bunch of one-off gsub calls, we have specifically named reusable functions that can be applied to not just this example, but any other problem that may require text manipulation.
+Instead of using a bunch of one-use gsub calls, we have specifically named reusable functions that can be applied to not just this example, but any other problem that may require text manipulation. In a real app, these functions would likely be pulled out into library files for better re-use.
 
 What is the `Function` class in this example? It's a subclass of Proc! Ruby procs already give us deferred execution, so we'll leverage and extend it.
 
@@ -137,15 +142,13 @@ From a console, we can see that each function can be called individually or chai
 ```
 > test = '   test1\n test2   '
 => "   test1\n test2   ""
-> Fs.strip.call(test)
+> StringOperations.strip.call(test)
 => "test1\n test2"
-> Fs.remove_line_feeds.call(test)
+> StringOperations.remove_line_feeds.call(test)
 => "   test1test2   "
-> (Fs.strip | Fs.remove_line_feeds).call(test)
+> (StringOperations.strip | StringOperations.remove_line_feeds).call(test)
 => "test1test2"
 ```
-
-Note the last line - the composition has a call method like any other Ruby proc. Compositions can be combined with other compositions - with this we can achieve re-usability.
 
 So... what have we gained?
 
@@ -155,6 +158,6 @@ So... what have we gained?
 
 Where do we go from here?
 =========================
-Now that the stage has been set, we'll start building this. The `Function` class is just a subclass of `Proc` with syntactic sugar.
+Now that the stage is set, we'll start building this. The `Function` class is just a subclass of `Proc` with syntactic sugar.
 
-Roll up your sleeves and head over to <a href="/blog/building-a-functional-composition-library-in-ruby-part-1">Part 2</a>.
+Roll up your sleeves and head over to <a href="/blog/building-a-functional-composition-library-in-ruby-part-2">Part 2</a>.

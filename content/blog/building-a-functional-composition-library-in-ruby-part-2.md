@@ -6,9 +6,9 @@ thumbnail = "images/cats_cradle.png"
 +++
 This article is one of a multi-part series discussing how to build a functional chaining library in ruby. <a href="/blog/functional-composition-in-ruby">Part I can be found here</a>.
 
-The end result of this discussion will be a Ruby gem that adds functional composition capabilities. The project is named Lightpipe - you can find <a href="https://github.com/choltz/lightpipe" target="window">the source here</a>.
+The previous article proposed a functional composition library in Ruby. Here, we'll start building this librarty - the end result of this discussion will be a Ruby gem that adds functional composition capabilities. The project is named Lightpipe - you can find <a href="https://github.com/choltz/lightpipe" target="window">the source here</a>.
 
-Each installment in this series will be a branch in the git repository. <a href="https://github.com/choltz/lightpipe/tree/part_1">. The source code for this installment is here</a>.
+Each installment in this series will have a dedicated branch in the repository. <a href="https://github.com/choltz/lightpipe/tree/part_1">.
 
 Dive into some code
 -------------------
@@ -27,7 +27,7 @@ end
 Ruby is quite versatile at manipulating text, but this code isn't very self describing. Let's break each of these calls to meaningfully named lambda functions.
 
 ```
-text    = "This is an <b>example</b> of\n text. it has formatting issues."
+text              = "This is an <b>example</b> of\n text. it has formatting issues."
 remove_line_feeds = ->(text) { text.gsub(/\n+/, '') }
 remove_markup     = ->(text) { text.gsub(/(<([^>]+)>)/, '') }
 split_sentences   = ->(text) { text.split(/ *\. */) }
@@ -46,8 +46,6 @@ results = join.call(
     )
   )
 )
-
-assert_equal "This is an example of text. It has formatting issues", results
 ```
 Ok that looks pretty terrible. I formatted the composition call in an indented hierarchy to illustrate a couple points:
 
@@ -76,7 +74,7 @@ composition = compose [ strip,
                         capitalize,
                         join ]
 
-assert_equal "This is an example of text. It has formatting issues", composition.call(text)
+composition.call(text)
 {{< /highlight >}}
 
 A few points:
@@ -85,15 +83,15 @@ A few points:
 2. The deep nesting is gone
 3. Execution is deferred until the composition is called
 
-This deferred execution is a key point to composition. A high level of re-use can be achieved by creating small and very focused functions and stitching them together via composition. Instead of immediately executing code, think of this as a box of Legos you assemble - a sort of function construction kit.
+This deferred execution is a key point to composition. A high level of re-use can be achieved by creating focused functions and stitching them together via composition. Instead of immediately executing code, think of this as a box of Legos you assemble - a sort of function construction kit.
 
-This solution still is too verbose. We'll tighten things up in the next installment in this series. In the mean time, let's build the compose function.
+We've made progress, but this solution still is too verbose. We'll tighten things up in the next installment in this series. In the mean time, let's build the compose function.
 
 Composition function code
 -------------------------
-As it turns out, ruby comes with built-in functions that make this solution very simple and terse. The idea is we want to call one function with an argument, then pass the results to the next function as its parameter... which passes the result to the next function, and so on.
+As it turns out, Ruby comes with built-in functions that make this solution very simple and terse. The idea is we want to call one function with an argument, then pass the results to the next function as its parameter... which passes the result to the next function, and so on.
 
-The workflow is perfectly described by the <a href="https://ruby-doc.org/core-2.1.0/Enumerable.html#method-i-reduce" target="window">reduce function</a>. If you aren't familar with reduce, it takes an initial value and applies it to the first element of an enumeration, then takes the result and applies it to the next element. Sounds familar right?
+The <a href="https://ruby-doc.org/core-2.1.0/Enumerable.html#method-i-reduce" target="window">reduce function</a> is a perfect match for this workflow. If you aren't familar with reduce, it applies a function to an element in an enumeration and passes the result to the next element.
 
 Expressing a composition with reduce looks something like this:
 
@@ -119,12 +117,12 @@ composition = ->(arg) {
   end
 }
 
-assert_equal "This is an example of text. It has formatting issues", composition.call(text)
+composition.call(text)
 {{< /highlight >}}
 
 Take note that the reduce call has to be wrapped in a lambda, otherwise we'd lose deferred execution.
 
-Now that we have working code that composes functions, this can be pulled into a common home. In the Lightpipe GEM, It is in function.rb. Here is what this example looks like:
+Now that we have working code that composes functions, this can be pulled into a common home. In the Lightpipe GEM, it is in <a href="https://github.com/choltz/lightpipe/blob/part_1/lib/lightpipe/function.rb" target="window">function.rb</a>. Here is what this example looks like:
 
 
 {{< highlight ruby >}}
@@ -151,8 +149,7 @@ class SomeClass
 
 This gets us a long ways towards practical composition in Ruby, but there more work to do:
 
-1. We can make the composition a lot more terse by overloading an operator
-2. We extract things like `remove_line_feeds` and `remove_markup` into a re-usable library of functions
-3. This solution is a lot more verbose than the original non-composed version
+1. Make the composition a lot more terse by designating a functional composition operator and overloading it
+2. Extract things like `remove_line_feeds` and `remove_markup` into a re-usable library of functions
 
 Each of these points will be addressed in the coming articles in this series.
