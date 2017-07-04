@@ -1,18 +1,21 @@
 +++
-date = "2017-04-08T11:15:21-04:00"
-title = "Building a Functional Composition Library in Ruby"
-draft = true
-thumbnail = "images/cats_cradle.png"
+title         = "Functional composition library in ruby - part 1"
+date          = "2017-01-14T16:18:00"
+comments      = true
+thumbnail     = "images/gears.png"
+image_creator = "http://maxpixel.freegreatpicture.com/Machinery-Mechanical-Cogs-Gears-Machine-1236578"
 +++
-This article is one of a multi-part series discussing how to build a functional chaining library in ruby. <a href="/blog/functional-composition-in-ruby">Part I can be found here</a>.
+Since Elixir has grown in popularity, I've seen a <a href="http://www.akitaonrails.com/2016/02/18/elixir-pipe-operator-for-ruby-chainable-methods" target="window">few</a> <a href="http://blog.molawson.com/elixir-pipes-in-ruby/" target="window">articles</a> spring up about how the pipe operator `|>` can be implemented in Ruby. I've been writing code with this style in an app at work lately and have found that it can result in readable and simplified code.
 
-The end result of this discussion will be a Ruby gem that adds functional composition capabilities. The project is named Lightpipe - you can find <a href="https://github.com/choltz/lightpipe" target="window">the source here</a>.
+<!--more-->
 
-Each installment in this series will be a branch in the git repository. <a href="https://github.com/choltz/lightpipe/tree/part_1">. The source code for this installment is here</a>.
+In this article, we'll talk about functional composition in Ruby and look at ways that it can be effectively applied to code. Let's start with a simple example.
 
-Dive into some code
--------------------
-Let's begin with the example we used in the <a href="/blog/functional-composition-in-ruby">previous article</a>. We start with a vanilla ruby method that cleans up a blob of text it removes, line feeds and html tags, splits on sentences into an array, capitalizes each sentence, then joins everything back together as a string.
+How we compose functions in vanilla Ruby
+========================================
+
+Chances are you already use functional composition. Let's say you need to clean data received on a POST. There could be leading and trailing spaces, undesirable HTML markup, extra line feeds, and sentences that don't start with capitalized words. What might a clean-up function look like in vanilla ruby?
+
 
 ```
 def cleanup(text)
@@ -24,135 +27,134 @@ def cleanup(text)
       .join('. ')
 end
 ```
-Ruby is quite versatile at manipulating text, but this code isn't very self describing. Let's break each of these calls to meaningfully named lambda functions.
+
+Because the String object has a strip and gsub method and the Array object has both a map and split method, we can chain them. This is not unusual code - Ruby does a good job chaining methods of the same class.
+
+In fact, this feature is a great stepping stone to functional programming and helps make ideas such as <a href="https://en.wikipedia.org/wiki/Tacit_programming" target="window">tacit programming</a> seem relatively natural to Rubyists.
+
+Despite the advantages of method chaining, there are a couple problems.
+
+1. This isn't self documenting - the old joke is that it is <a href="https://en.wikipedia.org/wiki/Write-only_language" target=
+"window">write only code</a>
+2. We can't add new methods with more meaningful names to the method chain
+3. This method does a lot - many tests would be needed to verify all cases
+
+We could satisfy #1 with comments:
 
 ```
-text    = "This is an <b>example</b> of\n text. it has formatting issues."
-remove_line_feeds = ->(text) { text.gsub(/\n+/, '') }
-remove_markup     = ->(text) { text.gsub(/(<([^>]+)>)/, '') }
-split_sentences   = ->(text) { text.split(/ *\. */) }
-strip             = ->(text) { text.strip }
-capitalize        = ->(text) { text.map(&:capitalize) }
-join              = ->(array) { array.join('. ') }
-
-results = join.call(
-  capitalize.call(
-    split_sentences.call(
-      remove_markup.call(
-        remove_line_feeds.call(
-          strip.call(text)
-        )
-      )
-    )
-  )
-)
-
-assert_equal "This is an example of text. It has formatting issues", results
+def cleanup(text)
+  text.strip
+      .gsub(/\n+/, '')         # remove line feeds
+      .gsub(/(<([^>]+)>)/, '') # remove html tags
+      .split(/ *\. */)         # split sentences
+      .map(&:capitalize)       # capitalize sentences
+      .join('. ')              # join sentences
+end
 ```
-Ok that looks pretty terrible. I formatted the composition call in an indented hierarchy to illustrate a couple points:
 
-1. Nesting function calls gets ugly fast - you end up with a <a href="https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming)" target="window">pyramid of doom</a>
-2. The order in which the functions execute is counter-intuitive. One would think the first function in the list is the first to execute, but because we're nesting functions, they execute from the inside out.
+This gets the job done, but it is preferable for code to be self-describing.
 
-Let's address both of these points by building something that composes functions.
+We could move some of this into new methods to improve readability and modularity:
 
-Compostion function
--------------------
-Let's work backwards for a moment. Using the previous example, this is roughly how we want a composition function to look:
+```
+def cleanup(text)
+  text = remove_line_feeds(text.strip)
+  text = remove_html_tags(text)
+  capitalize_sentences(text)
+end
 
-{{< highlight ruby >}}
-text    = "This is an <b>example</b> of\n text. it has formatting issues."
-remove_line_feeds = ->(text) { text.gsub(/\n+/, '') }
-remove_markup     = ->(text) { text.gsub(/(<([^>]+)>)/, '') }
-split_sentences   = ->(text) { text.split(/ *\. */) }
-strip             = ->(text) { text.strip }
-capitalize        = ->(text) { text.map(&:capitalize) }
-join              = ->(array) { array.join('. ') }
+def remove_line_feeds(text)
+  text.gsub(/\n+/, '')
+end
 
-composition = compose [ strip,
-                        remove_line_feeds,
-                        remove_markup,
-                        split_sentences,
-                        capitalize,
-                        join ]
+def remove_html_tags(text)
+  text.gsub(/(<([^>]+)>)/, '')
+end
 
-assert_equal "This is an example of text. It has formatting issues", composition.call(text)
-{{< /highlight >}}
+def capitalize_sentences(text)
+  text.split(/ *\. */)   # split sentences
+      .map(&:capitalize) # capitalize sentences
+      .join('. ')        # join sentences
+end
+```
 
-A few points:
+The cleanup function is more reable and requires less explanatory comments, but we have lost a lot of chainability.
 
-1. The functions in the composition execute in the order in which they are listed
-2. The deep nesting is gone
-3. Execution is deferred until the composition is called
+Functions!
+==========
+Rather than rely on method chaining and the handful of chainable methods ruby provides, we'll build a framework that lets us create our own functions that can be composed into more complicated structures.
 
-This deferred execution is a key point to composition. A high level of re-use can be achieved by creating small and very focused functions and stitching them together via composition. Instead of immediately executing code, think of this as a box of Legos you assemble - a sort of function construction kit.
+Rather than writing code in methods, think of this more in terms of creating a series of small functions that are then used to build more complicated functions - sort of a function construction kit.
 
-This solution still is too verbose. We'll tighten things up in the next installment in this series. In the mean time, let's build the compose function.
+The goal is to make our example look something like this:
 
-Composition function code
--------------------------
-As it turns out, ruby comes with built-in functions that make this solution very simple and terse. The idea is we want to call one function with an argument, then pass the results to the next function as its parameter... which passes the result to the next function, and so on.
+```
+def cleanup
+  Fs.strip                |
+  Fs.remove_line_feeds    |
+  Fs.remove_html_tags     |
+  Fs.capitalize_sentences
+end
+```
 
-The workflow is perfectly described by the <a href="https://ruby-doc.org/core-2.1.0/Enumerable.html#method-i-reduce" target="window">reduce function</a>. If you aren't familar with reduce, it takes an initial value and applies it to the first element of an enumeration, then takes the result and applies it to the next element. Sounds familar right?
+Let's take a look at what's going on in this function. Each line is a class function defined in `Fs`, an alias to the class `Functions::String` (described below).
 
-Expressing a composition with reduce looks something like this:
+Each of these functions returns a function rather than a value. That is, `Fs.strip` doesn't strip a string, it returns a function that strips a string. That way we can chain (compose) as many functions together as we like lazily, and then execute that composition later.
 
-{{< highlight ruby >}}
-text              = "This is an <b>example</b> of\n text. it has formatting issues."
-remove_line_feeds = ->(text)  { text.gsub(/\n+/, '') }
-remove_markup     = ->(text)  { text.gsub(/(<([^>]+)>)/, '') }
-split_sentences   = ->(text)  { text.split(/ *\. */) }
-strip             = ->(text)  { text.strip }
-capitalize        = ->(text)  { text.map(&:capitalize) }
-join              = ->(array) { array.join('. ') }
+The pipe `|` is an operator override that calls a compose method that joins the functions together - the output of one function is passed to the input of the next.
 
-functions = [ strip,
-              remove_line_feeds,
-              remove_markup,
-              split_sentences,
-              capitalize,
-              join ]
+Here is what `Functions::String` would look like:
 
-composition = ->(arg) {
-  functions.reduce(arg) do |result, function|
-    function.call result
+```
+module Functions
+  class String
+    def strip
+      Function.new { |text| text.strip }
+    end
+
+    def remove_line_feeds
+      Function.new { |text| text.gsub(/\n+/, '') }
+    end
+
+    def remove_html_tags
+      Function.new { |text| text.gsub(/(<([^>]+)>)/, '') }
+    end
+
+    def capitalize_sentences
+      Functions::Array.split             |
+      Functions::Array.map(&:capitalize) |
+      Functions::Array.join
+    end
   end
-}
+```
 
-assert_equal "This is an example of text. It has formatting issues", composition.call(text)
-{{< /highlight >}}
+Instead of using a bunch of one-off gsub calls, we have specifically named reusable functions that can be applied to not just this example, but any other problem that may require text manipulation.
 
-Take note that the reduce call has to be wrapped in a lambda, otherwise we'd lose deferred execution.
+What is the `Function` class in this example? It's a subclass of Proc! Ruby procs already give us deferred execution, so we'll leverage and extend it.
 
-Now that we have working code that composes functions, this can be pulled into a common home. In the Lightpipe GEM, It is in function.rb. Here is what this example looks like:
+From a console, we can see that each function can be called individually or chained together:
 
+```
+> test = '   test1\n test2   '
+=> "   test1\n test2   ""
+> Fs.strip.call(test)
+=> "test1\n test2"
+> Fs.remove_line_feeds.call(test)
+=> "   test1test2   "
+> (Fs.strip | Fs.remove_line_feeds).call(test)
+=> "test1test2"
+```
 
-{{< highlight ruby >}}
-class SomeClass
-  include Lightpipe
+Note the last line - the composition has a call method like any other Ruby proc. Compositions can be combined with other compositions - with this we can achieve re-usability.
 
-  def cleanup(content)
-    remove_line_feeds = ->(text)  { text.gsub(/\n+/, '') }
-    remove_markup     = ->(text)  { text.gsub(/(<([^>]+)>)/, '') }
-    split_sentences   = ->(text)  { text.split(/ *\. */) }
-    strip             = ->(text)  { text.strip }
-    capitalize        = ->(text)  { text.map(&:capitalize) }
-    join              = ->(array) { array.join('. ') }
+So... what have we gained?
 
-    composition = Function.compose [ strip,
-                                     remove_line_feeds,
-                                     remove_markup,
-                                     split_sentences,
-                                     capitalize,
-                                     join ]
-    composition.call(content)
-  end
-{{< /highlight >}}
+1. We can write our own chainable functions; we're not restricted to a small number of methods off of String and Array
+2. Our functions are composed from smaller, reusable functions
+3. The code in `cleanup` is self-describing; no comments are necessary
 
-This gets us a long ways towards practical composition in Ruby, but there more work to do:
+Where do we go from here?
+=========================
+Now that the stage has been set, we'll start building this. The `Function` class is just a subclass of `Proc` with syntactic sugar.
 
-1. We can make the composition a lot more terse by overloading an operator
-2. We extract things like `remove_line_feeds` and `remove_markup` into a re-usable library of functions
-3. This solution is a lot more verbose than the original non-composed version
-
-Each of these points will be addressed in the coming articles in this series.
+Roll up your sleeves and head over to <a href="/blog/building-a-functional-composition-library-in-ruby-part-1">Part 2</a>.
