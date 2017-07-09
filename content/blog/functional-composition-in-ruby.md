@@ -1,10 +1,16 @@
 +++
-title         = "functional composition library in ruby - part 1"
+title         = "Functional composition in ruby"
 date          = "2017-01-14T16:18:00"
 comments      = true
 thumbnail     = "images/gears.png"
 image_creator = "http://maxpixel.freegreatpicture.com/Machinery-Mechanical-Cogs-Gears-Machine-1236578"
 +++
+This is one of a multi-part series discussing how to build a functional chaining library in ruby.
+
+* Functional Composition in Ruby (this article)
+* <a href="/blog/building-a-functional-composition-library-in-ruby/">Building a Functional Composition Library in Ruby</a>
+* <a href="/blog/building-a-functional-composition-library-in-ruby-composition-operator">Building a functional composition library in ruby - composition operator</a>
+
 Since Elixir has grown in popularity, I've seen a <a href="http://www.akitaonrails.com/2016/02/18/elixir-pipe-operator-for-ruby-chainable-methods" target="window">few</a> <a href="http://blog.molawson.com/elixir-pipes-in-ruby/" target="window">articles</a> spring up about how the pipe operator `|>` can be implemented in Ruby. I've been writing code with this style in an app at work lately and have found that it can result in readable and simplified code.
 
 <!--more-->
@@ -12,7 +18,7 @@ Since Elixir has grown in popularity, I've seen a <a href="http://www.akitaonrai
 In this article, we'll talk about functional composition in Ruby and look at ways that it can be effectively applied to code. Let's start with a simple example.
 
 How we compose functions in vanilla Ruby
-========================================
+----------------------------------------
 
 Chances are you already use functional composition. Let's say you need to clean data received on a POST. There could be leading and trailing spaces, undesirable HTML markup, extra line feeds, and sentences that don't start with capitalized words. What might a clean-up function look like in vanilla ruby?
 
@@ -153,11 +159,11 @@ From a console, we can see that each function can be called individually or chai
 So... what have we gained?
 
 1. We can write our own chainable functions; we're not restricted to a small number of methods off of String and Array
-2. Our functions are composed from smaller, reusable functions
-3. The code in `cleanup` is self-describing; no comments are necessary
+2. The functions can be composed from smaller, reusable functions
+3. The code in the `cleanup` function is self-describing; no comments are necessary
 
 Where do we go from here?
 =========================
 Now that the stage is set, we'll start building this. The `Function` class is just a subclass of `Proc` with syntactic sugar.
 
-Roll up your sleeves and head over to <a href="/blog/building-a-functional-composition-library-in-ruby-part-2">Part 2</a>.
+Roll up your sleeves and head over to <a href="/blog/building-a-functional-composition-library-in-ruby">the next article.</a>.

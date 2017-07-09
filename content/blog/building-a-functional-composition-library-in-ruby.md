@@ -1,14 +1,18 @@
 +++
 date = "2017-04-08T11:15:21-04:00"
-title = "Functional composition library in ruby - part 2"
+title = "Building a functional composition library in ruby"
 draft = true
 thumbnail = "images/cats_cradle.png"
 +++
-This article is one of a multi-part series discussing how to build a functional chaining library in ruby. <a href="/blog/functional-composition-in-ruby">Part I can be found here</a>.
+This is one of a multi-part series discussing how to build a functional chaining library in ruby.
 
-The previous article proposed a functional composition library in Ruby. Here, we'll start building this librarty - the end result of this discussion will be a Ruby gem that adds functional composition capabilities. The project is named Lightpipe - you can find <a href="https://github.com/choltz/lightpipe" target="window">the source here</a>.
+* <a href="/blog/functional-composition-in-ruby">Functional Composition in Ruby</a>
+* Building a Functional Composition Library in Ruby (this article)
+* <a href="/blog/building-a-functional-composition-library-in-ruby-composition-operator">Building a functional composition library in ruby - composition operator</a>
 
-Each installment in this series will have a dedicated branch in the repository. <a href="https://github.com/choltz/lightpipe/tree/part_1">.
+Here, we'll start building the librarty - the end result of this discussion will be a Ruby gem that adds functional composition capabilities. The project is named Lightpipe - you can find <a href="https://github.com/choltz/lightpipe" target="window">the source here</a>.
+
+Each installment in this series will have a dedicated branch in the repository. <a href="https://github.com/choltz/lightpipe/tree/part_1" target="window">The code for this article is here</a>.
 
 Dive into some code
 -------------------
@@ -147,9 +151,9 @@ class SomeClass
   end
 {{< /highlight >}}
 
-This gets us a long ways towards practical composition in Ruby, but there more work to do:
+This goes a long ways towards practical composition in Ruby, but there more work to do:
 
-1. Make the composition a lot more terse by designating a functional composition operator and overloading it
+1. Designat a functional composition operator and overloading it
 2. Extract things like `remove_line_feeds` and `remove_markup` into a re-usable library of functions
 
-Each of these points will be addressed in the coming articles in this series.
+Next, we'll talk about the <a href="" target="window">composition operator</a>.
