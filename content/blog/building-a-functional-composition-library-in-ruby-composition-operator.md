@@ -12,7 +12,7 @@ This is one of a multi-part series discussing how to build a functional chaining
 
 In the previous article you saw how to transition a series of ruby methods like `map`, `split`, and, `gsub` into individual lambdas and then convert that into a chain of composed functions.
 
-We gained some readability by replacing code like `text.gsub(/\n+/, '')k }` with meaningully named functions, but the new code was too verbose. Here's where we left off:
+We gained some readability by replacing code like `text.gsub(/\n+/, '') }` with meaningully named functions, but the new code was too verbose. Here's where we left off:
 
 {{< highlight ruby >}}
 class SomeClass
