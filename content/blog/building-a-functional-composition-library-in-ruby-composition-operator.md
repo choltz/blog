@@ -34,7 +34,52 @@ class SomeClass
                                      join ]
     composition.call(content)
   end
+end
 {{< /highlight >}}
+
+This can be clear up a bit by moving the lambdas out into their own functions
+
+{{< highlight ruby >}}
+class SomeClass
+  include Lightpipe
+
+  def cleanup(content)
+    composition = Function.compose [ strip,
+                                     remove_line_feeds,
+                                     remove_markup,
+                                     split_sentences,
+                                     capitalize,
+                                     join ]
+    composition.call(content)
+  end
+
+  def capitalize
+    ->(text)  { text.map(&:capitalize) }
+  end
+
+  def join
+    ->(array) { array.join('. ') }
+  end
+
+  def remove_line_feeds
+    ->(text)  { text.gsub(/\n+/, '') }
+  end
+
+  def remove_markup
+    ->(text)  { text.gsub(/(<([^>]+)>)/, '') }
+  end
+
+  def split_sentences
+    ->(text)  { text.split(/ *\. */) }
+  end
+
+  def strip
+    ->(text)  { text.strip }
+  end
+end
+{{< /highlight >}}
+
+
 
 buh
 -------------------

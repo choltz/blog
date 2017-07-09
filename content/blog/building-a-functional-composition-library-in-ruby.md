@@ -149,6 +149,7 @@ class SomeClass
                                      join ]
     composition.call(content)
   end
+end
 {{< /highlight >}}
 
 This goes a long ways towards practical composition in Ruby, but there more work to do:
