@@ -12,7 +12,7 @@ This is one of a multi-part series discussing how to build a functional chaining
 
 In the previous article you saw how to transition a series of ruby methods like `map`, `split`, and, `gsub` into individual lambdas and then convert that into a chain of composed functions.
 
-We gained some readability by replacing code like `text.gsub(/\n+/, '') }` with meaningully named functions, but the new code was too verbose. Here's where we left off:
+We gained some readability by replacing code like `text.gsub(/\n+/, '')` with meaningully named functions, but the new code was too verbose. Here's where we left off:
 
 {{< highlight ruby >}}
 class SomeClass
@@ -105,7 +105,7 @@ def cleanup
 end
 {{< /highlight >}}
 
-This is looking pretty good. Let's compare this next to the original cleanup method:
+This is looking pretty good. Let's compare this to the original cleanup method:
 
 ```
 def cleanup                          def cleanup(text)
@@ -153,7 +153,7 @@ For this to work in our example, we do need to change each of the support method
 
 ```
 
-This is what a call to the `cleanup` function would look like:
+This is what a call to the `cleanup` function looks like:
 
 ```
 results = cleanup.call "This is an <b>example</b> of\n text. it has formatting issues."
@@ -172,5 +172,7 @@ results = cleanup.("This is an <b>example</b> of\n text. it has formatting issue
 * Note 3: This delayed execution is imporant - with it, you can chain this composition into other compositions without invoking the contained code
 
 We've come a long way, this new Function library lets us create clean compositions that have meaningful names and can be composed with any combination of other functions. We also started creating a series of support functions (remove_markup, remove_line_feeds, etc.) that can easily be moved into a common library for re-use.
+
+Like the previous article, there is a dedicated branch on github for <a href="https://github.com/choltz/lightpipe/tree/part_2" target="window">this step of the project</a>.
 
 In upcoming articles we'll continue to enhance the Function class to give more readable feedback in irb and pry, provide short-hand for defining small utility functions, and pull them into a common library for re-use.
